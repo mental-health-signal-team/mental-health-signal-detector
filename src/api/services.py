@@ -33,8 +33,11 @@ def run_explain(request: ExplainRequest, model) -> ExplainResponse:
 
     X = vectorizer.transform([text_clean])
 
-    # Pour TF-IDF + LR, la contribution de chaque terme est : tfidf(w) × coef_LR(w)
-    # C'est la valeur de Shapley exacte pour les modèles linéaires.
+    # Contribution linéaire de chaque terme : tfidf(w) × coef_LR(w).
+    # C'est une approximation des valeurs de Shapley pour les modèles linéaires
+    # (valide pour la partie "features", sans tenir compte de l'intercept ni de
+    # l'hypothèse de distribution de SHAP). Pour une valeur SHAP stricte,
+    # utiliser shap.LinearExplainer — cf. evaluate.py::explain_with_shap().
     tfidf_values = X.toarray()[0]           # (n_features,)
     coefs = clf.coef_[0]                    # (n_features,) — classe 1 (détresse)
     contributions = tfidf_values * coefs    # contribution de chaque mot

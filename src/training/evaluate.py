@@ -93,8 +93,18 @@ def explain_with_shap(pipeline, texts: list[str], n_samples: int = 100) -> None:
 
 
 def predict_proba_text(pipeline, text: str) -> dict:
-    """Retourne le score de risque pour un texte donné (utilisé par l'API)."""
-    proba = pipeline.predict_proba([text])[0]
+    """Retourne le score de risque pour un texte donné (usage évaluation/tests).
+
+    Applique le même preprocessing que le pipeline d'inférence (prepare_text +
+    clean_text) pour éviter un mismatch train/infer si le texte est brut ou en
+    français. L'API utilise src.training.predict.predict() qui fait ce travail.
+    """
+    from src.common.language import prepare_text
+    from src.training.preprocess import clean_text
+
+    text_en, _ = prepare_text(text)
+    text_clean = clean_text(text_en)
+    proba = pipeline.predict_proba([text_clean])[0]
     return {
         "label": int(np.argmax(proba)),
         "score_distress": float(proba[1]),

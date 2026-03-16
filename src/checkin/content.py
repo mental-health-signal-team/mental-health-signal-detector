@@ -36,7 +36,7 @@ EMOJI_LABELS: dict[str, str] = {
 
 GREEN_RESPONSES = [
     "Super ! Profite de cette belle énergie aujourd'hui. 🌱",
-    "Contenu de l'entendre ! Les bonnes journées, ça se cultive.",
+    "Content de l'entendre ! Les bonnes journées, ça se cultive.",
     "C'est bien de le reconnaître quand ça va. Continue comme ça ! ✨",
     "Bonne nouvelle ! Tu es sur la bonne longueur d'onde ce matin.",
 ]
@@ -109,7 +109,7 @@ RESOURCES = {
     "medecin": {
         "title": "👨‍⚕️ Parler à son médecin traitant",
         "description": (
-            "Ton médecin traitant peut te remettre un courrier d'accompagnagnement "
+            "Ton médecin traitant peut te remettre un courrier d'accompagnement "
             "pour accéder à Mon Soutien Psy, ou t'orienter vers d'autres ressources adaptées."
         ),
         "action": "Prendre rendez-vous",

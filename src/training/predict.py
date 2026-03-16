@@ -34,8 +34,6 @@ def predict(text: str, model=None, model_type: str = "baseline") -> dict:
     Prédit le score de risque pour un texte.
     Retourne : {"label": 0|1, "score_distress": float, "model": str}
     """
-    import torch
-
     if model is None:
         model = load_model(model_type)
 
@@ -47,6 +45,9 @@ def predict(text: str, model=None, model_type: str = "baseline") -> dict:
         label = int(proba.argmax())
         score = float(proba[1])
     else:
+        # Import torch uniquement pour DistilBERT — évite l'overhead au
+        # démarrage et pour chaque requête baseline (~1-2s d'import).
+        import torch
         tokenizer = model["tokenizer"]
         bert = model["model"]
         inputs = tokenizer(

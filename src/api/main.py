@@ -13,8 +13,14 @@ from src.common.config import get_settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Démarrage de l'API — chargement du modèle baseline...")
-    get_model("baseline")
+    # Pré-chargement eager du modèle baseline pour réduire la latence de la
+    # première requête. On tolère l'absence du fichier (CI, fresh-clone) :
+    # les endpoints gèrent eux-mêmes l'indisponibilité avec un 503.
+    try:
+        logger.info("Démarrage de l'API — chargement du modèle baseline...")
+        get_model("baseline")
+    except (FileNotFoundError, OSError) as e:
+        logger.warning(f"Modèle baseline introuvable au démarrage (ignoré) : {e}")
     yield
     logger.info("Arrêt de l'API.")
 

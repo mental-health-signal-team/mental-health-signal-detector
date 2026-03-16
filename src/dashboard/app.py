@@ -11,11 +11,14 @@ import requests
 import streamlit as st
 
 _raw_url = os.getenv("API_URL", "http://localhost:8000")
+# Normaliser avant validation : un slash final (http://host:8000/) est courant
+# et ne constitue pas un risque SSRF — le rejeter serait un faux positif silencieux.
+_normalized_url = _raw_url.rstrip("/")
 # Autorise uniquement http(s)://host:port — bloque les URLs internes arbitraires (SSRF)
-if not re.fullmatch(r"https?://[\w.\-]+(:\d+)?", _raw_url):
+if not re.fullmatch(r"https?://[\w.\-]+(:\d+)?", _normalized_url):
     API_URL = "http://localhost:8000"
 else:
-    API_URL = _raw_url.rstrip("/")
+    API_URL = _normalized_url
 
 st.set_page_config(
     page_title="Mental Health Signal Detector",

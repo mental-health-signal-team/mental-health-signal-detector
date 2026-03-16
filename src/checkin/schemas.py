@@ -21,5 +21,5 @@ class CheckInResponse(BaseModel):
     message: str
     tip: str | None = None
     follow_up: str | None = Field(default=None, description="Question de suivi si pertinent")
-    resources: list[ResourceItem] = []
+    resources: list[ResourceItem] = Field(default_factory=list)
     detected_lang: str = "fr"

@@ -46,9 +46,11 @@ Nettoyage texte (clean_text)
 | Couche | Technologie |
 |--------|-------------|
 | ML / NLP | scikit-learn, HuggingFace Transformers |
-| Sérialisation modèle | joblib (plus sûr et 2× plus compact que pickle) |
+| Sérialisation modèle | joblib (format compact, 2× plus rapide que pickle — pour artefacts ML internes de confiance) |
 | API REST | FastAPI + Uvicorn + CORS middleware |
+| Check-in conversationnel | FastAPI router + moteur emoji+NLP (`src/checkin/`) |
 | Dashboard | Streamlit + visualisation SHAP |
+| Traduction | deep-translator + timeout via `concurrent.futures` (compatible ASGI) |
 | Infrastructure | Docker (non-root) + GitHub Actions CI |
 
 ---
@@ -188,6 +190,8 @@ TRANSFORMERS_NO_TF=1 uvicorn src.api.main:app --reload --port 8000
 {"status": "ok", "model_loaded": true}
 ```
 
+> L'API démarre même si `models/baseline.joblib` est absent (CI, fresh-clone) — les endpoints `/predict` et `/explain` retournent alors un `503`.
+
 ---
 
 #### `POST /predict`
@@ -259,7 +263,60 @@ curl -X POST http://localhost:8000/explain \
 }
 ```
 
+> `shap_value` est une contribution linéaire `tfidf(w) × coef_LR(w)` — approximation des valeurs de Shapley valide pour les modèles linéaires. Pour du SHAP strict, `evaluate.py::explain_with_shap()` utilise `shap.LinearExplainer`.
+
 > Valeur positive → pousse vers détresse · Valeur négative → pousse vers non-détresse
+
+---
+
+#### `POST /checkin`
+
+Point d'entrée de l'app "Comment vas-tu ce matin ?" (Phase 2). Combine un emoji de humeur et/ou un texte libre pour produire une réponse conversationnelle contextualisée.
+
+```bash
+curl -X POST http://localhost:8000/checkin \
+  -H "Content-Type: application/json" \
+  -d '{"emoji": "😔", "text": "Je me sens fatigué depuis quelques jours", "step": 1}'
+```
+
+**Corps de la requête :**
+
+| Champ | Type | Valeurs | Description |
+|-------|------|---------|-------------|
+| `emoji` | string \| null | `😄 🙂 😐 😔 😢` | Emoji de humeur (optionnel si texte fourni) |
+| `text` | string \| null | max 1000 caractères | Texte libre (optionnel si emoji fourni) |
+| `step` | int | `1` \| `2` | `1` = check-in initial, `2` = réponse à la question de suivi |
+
+> Au moins un `emoji` ou un `text` est requis — sinon `422`.
+
+**Réponse :**
+
+```json
+{
+  "level": "yellow",
+  "score": 0.65,
+  "greeting": "Bonjour ☀️",
+  "message": "Je t'entends. C'est courageux de le reconnaître. 💛",
+  "tip": "💡 Rappel : Parfois, mettre des mots sur ce qu'on ressent suffit à l'alléger.",
+  "follow_up": "Depuis combien de temps tu te sens comme ça ?",
+  "resources": [],
+  "detected_lang": "fr"
+}
+```
+
+| Champ | Description |
+|-------|-------------|
+| `level` | `green` / `yellow` / `red` — déterminé par max(score emoji, score NLP) |
+| `score` | Score de détresse fusionné [0.0–1.0] |
+| `follow_up` | Question de suivi (step=1 uniquement, null sinon) |
+| `resources` | Ressources d'aide (vides en vert, Mon Soutien Psy en jaune step=2, 3114 en rouge) |
+
+**Plancher de sécurité :**
+
+| Emoji | Niveau minimum garanti |
+|-------|----------------------|
+| 😢 | `red` — toujours, quelle que soit l'analyse NLP |
+| 😔 | `yellow` — jamais en dessous, même si le NLP est optimiste |
 
 ---
 
@@ -328,6 +385,15 @@ ruff check src/ tests/          # lint
 pytest tests/ --cov=src --cov-report=term-missing
 ```
 
+**Couverture des tests :**
+
+| Fichier | Ce qui est couvert |
+|---------|--------------------|
+| `tests/training/test_train.py` | Preprocessing, entraînement baseline, scoring |
+| `tests/api/test_health.py` | `/health`, `/predict` (modèle absent, type invalide) |
+| `tests/api/test_checkin.py` | `/checkin` : 422, emoji seul, fallback NLP, planchers de sécurité, step=2 |
+| `tests/checkin/test_engine.py` | `compute_score`, `get_level`, planchers 😢→RED et 😔→YELLOW, `build_response` |
+
 ### CI GitHub Actions
 
 Déclenché sur push vers `main`, `Fabrice`, `Stan`, `Thomas`, `aimen`.
@@ -342,12 +408,12 @@ ruff → pytest --cov → upload coverage artifact
 
 | Mesure | Détail |
 |--------|--------|
-| **Sérialisation** | joblib à la place de pickle (pas d'exécution de code arbitraire) |
+| **Sérialisation** | joblib pour les artefacts ML internes — modèles chargés uniquement depuis `models/` (non exposé au réseau) |
 | **CORS** | `*` en développement, origines restreintes au dashboard en production |
 | **Erreurs API** | Messages génériques côté client — détails loggés uniquement côté serveur |
 | **Données sensibles** | Le contenu des textes n'est jamais loggué (longueur uniquement) |
-| **Traduction externe** | Timeout 5s + fallback silencieux si Google Translate est indisponible |
-| **Validation URL** | `API_URL` dans le dashboard validée par regex (protection SSRF) |
+| **Traduction externe** | Timeout 5s via `concurrent.futures` (compatible threadpool ASGI) + fallback silencieux |
+| **Validation URL** | `API_URL` dans le dashboard normalisée puis validée par regex (protection SSRF, slash final toléré) |
 | **Docker** | Conteneurs exécutés en utilisateur non-root (`appuser`, uid=1000) |
 | **Secrets** | `.env` dans `.gitignore` — jamais commité |
 
@@ -399,23 +465,34 @@ mental-health-signal-detector/
 │   └── run_train.sh
 ├── src/
 │   ├── api/
-│   │   ├── main.py           # FastAPI, lifespan, CORS, endpoints
+│   │   ├── main.py           # FastAPI, lifespan gracieux, CORS, endpoints
 │   │   ├── schemas.py        # Pydantic : PredictRequest/Response, ExplainRequest/Response
-│   │   ├── services.py       # run_prediction(), run_explain() (contributions TF-IDF×coef)
-│   │   └── dependencies.py   # get_model() avec @lru_cache
+│   │   ├── services.py       # run_prediction(), run_explain() (contributions TF-IDF×coef LR)
+│   │   ├── checkin_router.py # Router /checkin : fusion emoji+NLP, fallback gracieux
+│   │   └── dependencies.py   # get_model() avec @lru_cache(maxsize=2) — baseline + distilbert
+│   ├── checkin/
+│   │   ├── engine.py         # Moteur de décision : compute_score, get_level, planchers sécurité
+│   │   ├── content.py        # Réponses/tips/ressources par niveau (VERT/JAUNE/ROUGE)
+│   │   └── schemas.py        # CheckInRequest / CheckInResponse (Pydantic)
 │   ├── common/
 │   │   ├── config.py         # Settings pydantic-settings
-│   │   └── language.py       # Détection langue + traduction FR→EN (timeout 5s)
+│   │   ├── language.py       # Détection langue + traduction FR→EN (timeout concurrent.futures)
+│   │   └── logging.py        # Loguru : stderr + rotation fichier (crée logs/ si absent)
 │   ├── dashboard/
-│   │   └── app.py            # Streamlit : prédiction + graphique SHAP
+│   │   └── app.py            # Streamlit : prédiction + graphique SHAP + protection SSRF
 │   └── training/
 │       ├── preprocess.py     # Chargement et nettoyage (Kaggle, DAIR-AI, GoEmotions, SMHD)
 │       ├── train.py          # Entraînement baseline (joblib) et DistilBERT
-│       ├── evaluate.py       # Métriques, matrice de confusion, SHAP summary
-│       └── predict.py        # Inférence baseline + DistilBERT (joblib, FR/EN)
+│       ├── evaluate.py       # Métriques, matrice de confusion, SHAP summary (LinearExplainer)
+│       └── predict.py        # Inférence baseline + DistilBERT (torch import lazy pour baseline)
 ├── tests/
-│   ├── api/test_health.py
-│   └── training/test_train.py
+│   ├── api/
+│   │   ├── test_health.py    # /health, /predict (modèle absent, type invalide)
+│   │   └── test_checkin.py   # /checkin : 422, emoji seul, fallback NLP, planchers sécurité
+│   ├── checkin/
+│   │   └── test_engine.py    # compute_score, get_level, planchers 😢→RED 😔→YELLOW
+│   └── training/
+│       └── test_train.py     # Preprocessing, entraînement, scoring
 ├── .env.example              # Template variables d'environnement (commenté)
 ├── .gitignore                # .env, data/, models/ exclus
 ├── .github/workflows/ci.yml  # ruff + pytest + coverage
