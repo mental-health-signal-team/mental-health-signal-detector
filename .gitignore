@@ -1,1 +1,55 @@
-data/
+# OS / Editor
+.DS_Store
+.vscode/
+.idea/
+
+# Python cache / build
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Test / coverage / typing
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs and temp files
+*.log
+logs/
+tmp/
+temp/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Data and artifacts
+data/raw/
+data/processed/
+data/external/
+models/
+artifacts/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Docker
+docker/.env
