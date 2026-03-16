@@ -1,0 +1,4 @@
+api_url: http://localhost:8000
+default_model: baseline
+request_timeout: 15        # timeout /predict et /explain (secondes)
+shap_n_features: 15        # nombre de mots affichés dans le graphique SHAP

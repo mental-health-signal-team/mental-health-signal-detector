@@ -1,0 +1,14 @@
+host: 0.0.0.0
+port: 8000
+workers: 1
+default_model: baseline
+log_level: info
+
+# CORS : origines autorisées selon ENV (development = *, production = liste explicite)
+cors_development: "*"
+cors_production:
+  - http://localhost:8501
+  - http://dashboard:8501
+
+# Traduction externe
+translation_timeout: 5     # secondes avant fallback (texte original)

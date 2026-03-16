@@ -1,0 +1,40 @@
+name: CI — Mental Health Signal Detector
+
+on:
+  push:
+    branches: [main, Fabrice, Stan, Thomas, aimen]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Tests & Qualité du code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Installer les dépendances
+        run: pip install -r requirements-dev.txt
+
+      - name: Lint (ruff)
+        run: ruff check src/ tests/
+
+      - name: Tests pytest
+        env:
+          TRANSFORMERS_NO_TF: "1"
+          USE_TF: "0"
+        run: pytest tests/ --cov=src --cov-report=term-missing
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: .coverage

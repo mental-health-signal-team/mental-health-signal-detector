@@ -1,0 +1,11 @@
+data/
+notebooks/
+reports/
+.git/
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+logs/
+*.zip

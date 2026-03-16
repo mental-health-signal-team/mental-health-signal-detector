@@ -1,0 +1,20 @@
+data:
+  kaggle_path: null          # chemin vers le CSV Kaggle (null = non utilisé)
+  use_dair: true             # charger DAIR-AI/emotion depuis HuggingFace
+  test_size: 0.2
+  random_state: 42
+
+baseline:
+  max_features: 50000
+  ngram_range: [1, 2]
+  C: 1.0
+  model_output: models/baseline.joblib
+
+distilbert:
+  model_name: distilbert-base-uncased
+  output_dir: models/fine_tuned
+  epochs: 3
+  batch_size: 16
+  max_length: 256
+
+reports_dir: reports/
