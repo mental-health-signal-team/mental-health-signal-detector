@@ -1,0 +1,18 @@
+[project]
+name = "mental-health-signal-detector"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Stanislav Grinchenko",email = "stasagr@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas (>=3.0.1,<4.0.0)",
+    "datasets (>=4.7.0,<5.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
