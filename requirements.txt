@@ -10,6 +10,7 @@ torch==2.3.0
 datasets==2.19.1
 accelerate>=0.21.0
 shap==0.45.0
+matplotlib==3.9.0
 
 # API
 fastapi==0.111.0

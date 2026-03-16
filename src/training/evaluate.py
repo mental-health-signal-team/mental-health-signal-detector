@@ -4,7 +4,11 @@
 
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+    _MATPLOTLIB_AVAILABLE = True
+except ImportError:  # pragma: no cover
+    _MATPLOTLIB_AVAILABLE = False
 from pathlib import Path
 from loguru import logger
 from sklearn.metrics import (
@@ -36,6 +40,10 @@ def evaluate_baseline(pipeline, test_df: pd.DataFrame) -> dict:
 
 
 def plot_confusion_matrix(pipeline, test_df: pd.DataFrame, save: bool = True) -> None:
+    if not _MATPLOTLIB_AVAILABLE:
+        logger.warning("matplotlib non disponible — confusion matrix ignorée")
+        return
+
     y_true = test_df["label"]
     y_pred = pipeline.predict(test_df["text"])
 
@@ -78,9 +86,10 @@ def explain_with_shap(pipeline, texts: list[str], n_samples: int = 100) -> None:
         max_display=20,
     )
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-    plt.savefig(REPORTS_DIR / "shap_summary.png", bbox_inches="tight")
-    logger.info(f"SHAP summary sauvegardé → {REPORTS_DIR / 'shap_summary.png'}")
-    plt.close()
+    if _MATPLOTLIB_AVAILABLE:
+        plt.savefig(REPORTS_DIR / "shap_summary.png", bbox_inches="tight")
+        logger.info(f"SHAP summary sauvegardé → {REPORTS_DIR / 'shap_summary.png'}")
+        plt.close()
 
 
 def predict_proba_text(pipeline, text: str) -> dict:
