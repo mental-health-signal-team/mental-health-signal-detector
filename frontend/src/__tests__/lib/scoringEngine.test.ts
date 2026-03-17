@@ -147,6 +147,51 @@ describe("detectClinicalDimensions", () => {
   it("détecte mots-clés anglais (burnout)", () => {
     expect(detectClinicalDimensions("I'm burned out and exhausted for weeks")).toContain("burnout");
   });
+
+  // Nouveaux mots-clés cliniques (rec. clinicien)
+  it("burnout — cynisme/désengagement détecté", () => {
+    expect(detectClinicalDimensions("je m'en fiche de tout, plus de sens au travail")).toContain("burnout");
+    expect(detectClinicalDimensions("i don't care anymore about anything")).toContain("burnout");
+  });
+
+  it("burnout — inefficacité détectée", () => {
+    expect(detectClinicalDimensions("je suis complètement dépassé et submergé")).toContain("burnout");
+    expect(detectClinicalDimensions("overwhelmed by everything")).toContain("burnout");
+  });
+
+  it("anxiety — anticipation catastrophiste détectée", () => {
+    expect(detectClinicalDimensions("je m'inquiète tout le temps, je pense au pire")).toContain("anxiety");
+    expect(detectClinicalDimensions("always on edge and can't relax")).toContain("anxiety");
+  });
+
+  it("anxiety — hypervigilance/somatique détectée", () => {
+    expect(detectClinicalDimensions("je suis tendu, je n'arrive pas à me détendre")).toContain("anxiety");
+    expect(detectClinicalDimensions("je tremble et j'ai une boule au ventre")).toContain("anxiety");
+    expect(detectClinicalDimensions("je n'arrive pas à dormir tellement j'angoisse")).toContain("anxiety");
+  });
+
+  it("depression_masked — anhédonie détectée", () => {
+    expect(detectClinicalDimensions("plus envie de rien, rien ne me fait plaisir")).toContain("depression_masked");
+  });
+
+  it("depression_masked — fatigue morale/ralentissement détecté", () => {
+    expect(detectClinicalDimensions("tout me coûte, je suis épuisé moralement")).toContain("depression_masked");
+    expect(detectClinicalDimensions("je n'avance pas, je suis ralenti dans tout")).toContain("depression_masked");
+  });
+
+  it("depression_masked — isolement/inutilité détecté", () => {
+    expect(detectClinicalDimensions("je me sens seul et je ne sers à rien")).toContain("depression_masked");
+    expect(detectClinicalDimensions("personne ne comprend, je suis invisible")).toContain("depression_masked");
+    expect(detectClinicalDimensions("i feel empty and i feel alone")).toContain("depression_masked");
+  });
+
+  it("dysregulation — impulsivité/fuite détectée", () => {
+    expect(detectClinicalDimensions("j'ai envie de tout lâcher et je veux tout casser")).toContain("dysregulation");
+  });
+
+  it("CRITICAL_KEYWORDS contient au moins 25 entrées (directes + indirectes)", () => {
+    expect(CRITICAL_KEYWORDS.length).toBeGreaterThanOrEqual(25);
+  });
 });
 
 // ─── getDistressLevel ────────────────────────────────────────────────────────
@@ -222,11 +267,22 @@ describe("getDistressLevel", () => {
     expect(level).toBe("elevated");
   });
 
-  it("les 18 keywords critiques déclenchent tous critical", () => {
+  it("tous les keywords critiques déclenchent critical (idéation directe + indirecte)", () => {
     for (const kw of CRITICAL_KEYWORDS) {
       const level = getDistressLevel(0, `context: ${kw}`, "joy", [], null);
       expect(level).toBe("critical");
     }
+  });
+
+  it("idéation indirecte — fardeau → critical", () => {
+    expect(getDistressLevel(null, "je suis un fardeau pour tout le monde", "joy", [], null)).toBe("critical");
+    expect(getDistressLevel(null, "ça serait mieux sans moi", "calm", [], null)).toBe("critical");
+    expect(getDistressLevel(null, "plus de raison de vivre", "stress", [], null)).toBe("critical");
+  });
+
+  it("idéation indirecte EN → critical", () => {
+    expect(getDistressLevel(null, "i feel better off without me", "joy", [], null)).toBe("critical");
+    expect(getDistressLevel(null, "no reason to live anymore", "calm", [], null)).toBe("critical");
   });
 
   // Fix 2 — masquage émotion/texte avec ML modéré
@@ -391,8 +447,8 @@ describe("constantes", () => {
   it("SCORE_CRITICAL = 0.65", () => expect(SCORE_CRITICAL).toBe(0.65));
   it("SCORE_ELEVATED = 0.35", () => expect(SCORE_ELEVATED).toBe(0.35));
   it("EMOTION_FLOOR sadness = 0.35", () => expect(EMOTION_FLOOR.sadness).toBe(0.35));
-  it("CRITICAL_KEYWORDS contient au moins 15 entrées", () => {
-    expect(CRITICAL_KEYWORDS.length).toBeGreaterThanOrEqual(15);
+  it("CRITICAL_KEYWORDS contient au moins 25 entrées (directes + indirectes)", () => {
+    expect(CRITICAL_KEYWORDS.length).toBeGreaterThanOrEqual(25);
   });
   it("DISTRESS_TEXT_SIGNALS contient au moins 10 signaux", () => {
     expect(DISTRESS_TEXT_SIGNALS.length).toBeGreaterThanOrEqual(10);

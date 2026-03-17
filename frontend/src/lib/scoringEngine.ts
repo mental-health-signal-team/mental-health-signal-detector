@@ -14,13 +14,22 @@ import type { ClinicalDimension, ClinicalProfile, DiagnosticProfile } from "../t
 export type DistressLevel = "light" | "elevated" | "critical";
 
 // ─── Filet de sécurité absolu ────────────────────────────────────────────────
+// Idéation suicidaire explicite + variantes indirectes (fardeau, disparition,
+// absence de raison de vivre). Toute correspondance → "critical" immédiat.
 export const CRITICAL_KEYWORDS = [
+  // Idéation directe
   "suicide", "suicider", "me tuer", "mourir", "plus envie de vivre",
   "disparaître", "en finir", "me supprimer", "j'ai envie de mourir",
   "pensées suicidaires", "je veux mourir",
   "je n'en peux plus", "je veux disparaître", "je ne veux plus être là",
   "personne ne m'aime", "personne ne peut m'aider",
   "je ne veux plus vivre", "j'en ai marre de tout", "tout seul au monde",
+  // Idéation indirecte — fardeau / absence perçue bénéfique (rec. clinicien)
+  "ça serait mieux sans moi", "tout serait plus simple si je n'étais plus là",
+  "plus de raison de vivre", "à quoi bon vivre", "je suis un fardeau",
+  "personne ne remarquerait si je disparaissais",
+  // EN — indirect suicidal ideation
+  "better off without me", "no reason to live", "can't go on anymore",
 ];
 
 // ─── Seuils de triage clinique ───────────────────────────────────────────────
@@ -49,24 +58,66 @@ export const DISTRESS_TEXT_SIGNALS = [
 
 // ─── Détection de dimensions cliniques dans le texte ────────────────────────
 export const DIMENSION_KEYWORDS: Record<ClinicalDimension, string[]> = {
+  // Axe : épuisement motivationnel / énergétique / professionnel
+  // Tri-dimensionnel : épuisement + cynisme/désengagement + inefficacité
   burnout: [
-    "j'en peux plus", "je n'arrive plus", "à bout", "plus la force",
-    "complètement vide", "épuisé depuis", "plus d'énergie", "je tiens plus",
-    "i can't go on", "burned out", "exhausted for weeks",
+    // Épuisement (existant)
+    "j'en peux plus", "à bout", "plus la force", "épuisé depuis",
+    "plus d'énergie", "je tiens plus", "i can't go on", "burned out",
+    "exhausted for weeks",
+    // Épuisement complémentaire
+    "je suis à plat", "plus aucune motivation", "running on empty",
+    "no motivation left", "je suis vidé",
+    // Cynisme / désengagement (rec. clinicien — discriminant burnout vs dépression)
+    "je m'en fiche de tout", "plus de sens au travail", "je suis désengagé",
+    "rien ne sert à rien", "i don't care anymore",
+    // Inefficacité (rec. clinicien — 3e dimension Maslach)
+    "je suis dépassé", "complètement dépassé", "je suis submergé", "je n'y arrive plus au travail",
+    "overwhelmed", "je suis incompétent",
   ],
+  // Axe : activation anxieuse — projection future + activation physiologique
   anxiety: [
+    // Contrôle / fréquence (existant)
     "je ne contrôle plus", "tout le temps peur", "ça ne s'arrête pas",
     "j'angoisse", "attaque de panique", "je panique", "peur de tout",
     "anxiété", "rumination", "can't stop worrying", "panic attack",
+    // Anticipation catastrophiste (rec. clinicien — projection future)
+    "je m'inquiète tout le temps", "je pense au pire", "et si ça tourne mal",
+    "j'anticipe le pire",
+    // Hypervigilance / tension (rec. clinicien)
+    "je suis tendu", "je n'arrive pas à me détendre", "always on edge",
+    "je suis sur les nerfs",
+    // Somatique (rec. clinicien — activation physiologique)
+    "je tremble", "boule au ventre", "je n'arrive pas à dormir",
+    "i can't sleep", "heart racing", "j'ai du mal à respirer",
   ],
+  // Axe : registre cognitif / existentiel — dépression masquée
+  // Triade classique : humeur ↓ + énergie ↓ + plaisir ↓
   depression_masked: [
+    // Existentiel / sens (existant)
     "à quoi ça sert", "plus de plaisir", "je suis nul", "rien ne va",
     "plus rien ne m'intéresse", "je me sens vide", "sans espoir",
+    // Anhédonie (rec. clinicien — plaisir ↓)
+    "plus envie de rien", "rien ne me fait plaisir", "plus rien ne m'amuse",
+    // Fatigue morale / charge (rec. clinicien — énergie ↓)
+    "tout me coûte", "c'est trop lourd", "je suis épuisé moralement",
+    // Ralentissement psychomoteur (rec. clinicien)
+    "je n'avance pas", "je suis ralenti", "je n'arrive pas à me lever",
+    // Isolement / invisibilité (rec. clinicien)
+    "je me sens seul", "personne ne comprend", "je suis invisible",
+    "je ne sers à rien", "je suis inutile",
+    // EN (existant + nouveau)
     "worthless", "hopeless", "nothing matters", "no point",
+    "i feel empty", "i feel alone",
   ],
+  // Axe : impulsivité / perte de contrôle comportemental
   dysregulation: [
+    // Passage à l'acte / auto-agression (existant)
     "j'explose", "je casse tout", "je me suis blessé", "je perds le contrôle",
     "je me fais du mal", "self-harm", "je me coupe", "envie de frapper",
+    // Impulsivité / fuite (rec. clinicien)
+    "j'ai envie de tout lâcher", "je veux tout casser", "je n'en peux plus de moi",
+    "out of control",
   ],
 };
 
