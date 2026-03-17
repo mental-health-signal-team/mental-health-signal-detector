@@ -1,5 +1,6 @@
 # OS / Editor
 .DS_Store
+.python-version
 .vscode/
 .idea/
 
@@ -17,7 +18,7 @@ dist/
 # Virtual environments
 .venv/
 venv/
-env/
+.env/
 
 # Test / coverage / typing
 .pytest_cache/
@@ -56,5 +57,5 @@ artifacts/
 # Docker
 docker/.env
 
-claude/
+.claude/
 .kaggle/
