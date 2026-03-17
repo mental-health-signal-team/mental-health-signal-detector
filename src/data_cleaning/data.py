@@ -2,7 +2,6 @@ from pathlib import Path
 
 import kagglehub
 import pandas as pd
-from kaggle.api.kaggle_api_extended import KaggleApi
 
 DATA_FILENAME = "reddit_depression_dataset.csv"
 
@@ -31,6 +30,8 @@ def _get_project_data_dir() -> Path:
 
 def download_data() -> None:
     """Load the dataset from the Kaggle API."""
+    from kaggle.api.kaggle_api_extended import KaggleApi
+
     # Initialize Kaggle API
     api = KaggleApi()
     api.authenticate()
