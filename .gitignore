@@ -17,7 +17,7 @@ dist/
 # Virtual environments
 .venv/
 venv/
-env/
+.env/
 
 # Test / coverage / typing
 .pytest_cache/
