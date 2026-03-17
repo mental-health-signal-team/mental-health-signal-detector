@@ -1,0 +1,37 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: debug-statements
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.1
+    hooks:
+    # Apply Ruff linting fixes.
+      - id: ruff
+        name: ruff fix # We can add arbitrary names to our hooks
+        args: [--fix]
+        types_or: [python, pyi] # Only scan .py files (and not jupyter notebooks)
+
+      # Run the formatter.
+      - id: ruff-format
+        name: ruff format
+        types_or: [python, pyi] # Only format .py files (and not jupyter notebooks)
+
+      # Run the linter one last time to check for remaining issues.
+      - id: ruff
+        name: ruff check
+        args: [--output-format, concise] # Makes the ruff check output more legible.
+        types_or: [python, pyi] # Only scan .py files (and not jupyter notebooks)
+
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.8.1
+    hooks:
+      - id: nbstripout    # strips notebook outputs before committing

@@ -1,5 +1,6 @@
 # OS / Editor
 .DS_Store
+.python-version
 .vscode/
 .idea/
 
@@ -55,3 +56,6 @@ artifacts/
 
 # Docker
 docker/.env
+
+.claude/
+.kaggle/
