@@ -71,7 +71,6 @@ describe("computeFinalScore", () => {
   it("blend pondéré avec self-report", () => {
     const ml = 0.6;
     const self = 0.8;
-    const expected = self * 0.45 + (ml + 0.20) * 0.55; // masking car joy → +0.20
     // Utilisons stress (pas d'émotion positive) pour tester le blend pur
     const expectedStress = self * 0.45 + ml * 0.55; // 0.36 + 0.33 = 0.69
     expect(computeFinalScore(ml, "stress", self)).toBeCloseTo(expectedStress, 5);
