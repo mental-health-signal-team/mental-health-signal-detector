@@ -149,6 +149,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", choices=["baseline", "distilbert"], default="baseline")
     parser.add_argument("--kaggle-path", type=str, default=None, help="Chemin vers le CSV Kaggle")
     parser.add_argument("--smhd-path", type=str, default=None, help="Chemin vers le CSV SMHD")
+    parser.add_argument("--erisk25-path", type=str, default=None, help="Chemin vers le dossier eRisk25")
     parser.add_argument("--no-dair", action="store_true", help="Ne pas utiliser DAIR-AI/emotion")
     parser.add_argument("--go-emotions", action="store_true", help="Ajouter GoEmotions au dataset")
     parser.add_argument("--kaggle-samples", type=int, default=100_000, help="Nb max de samples Kaggle")
@@ -158,6 +159,7 @@ if __name__ == "__main__":
         kaggle_path=args.kaggle_path,
         use_dair=not args.no_dair,
         use_go_emotions=args.go_emotions,
+        erisk25_path=args.erisk25_path,
         smhd_path=args.smhd_path,
         kaggle_max_samples=args.kaggle_samples,
     )

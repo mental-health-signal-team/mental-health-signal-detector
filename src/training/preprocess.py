@@ -5,6 +5,7 @@ Datasets supportés :
   - Kaggle reddit depression dataset (CSV local — 2.47M posts Reddit)
   - DAIR-AI/emotion (HuggingFace — 18K phrases labelisées)
   - GoEmotions (Google/HuggingFace — 54K commentaires Reddit, 28 émotions)
+  - eRisk25 (CLEF 2025 — 909 sujets, ~250K posts Reddit, labels cliniques dépression)
   - SMHD (si disponible — 9 troubles mentaux, accès sur demande)
 """
 
@@ -126,6 +127,62 @@ def load_go_emotions(split: str = "train") -> pd.DataFrame:
     return df.reset_index(drop=True)
 
 
+def load_erisk25(data_path: str | Path, max_samples: int | None = None, random_state: int = 42) -> pd.DataFrame:
+    """
+    Charge eRisk 2025 Task 2 (Early Contextualized Depression).
+
+    Format : un fichier JSON par sujet Reddit.
+    Chaque fichier = liste de posts avec champ 'submission' contenant :
+      - target (bool) : True = dépression diagnostiquée, False = contrôle
+      - title (str), body (str), created_utc (str)
+
+    Tous les posts d'un même sujet partagent le même label.
+    Source : CLEF eRisk 2025 — https://erisk.irlab.org/
+    """
+    import json
+    import glob
+
+    data_path = Path(data_path)
+    json_dir = data_path / "final-eriskt2-dataset-with-ground-truth" / "all_combined"
+
+    if not json_dir.exists():
+        raise FileNotFoundError(f"Dossier eRisk25 introuvable : {json_dir}")
+
+    files = glob.glob(str(json_dir / "subject_*.json"))
+    if not files:
+        raise FileNotFoundError(f"Aucun fichier subject_*.json dans {json_dir}")
+
+    rows = []
+    for filepath in files:
+        with open(filepath, encoding="utf-8") as f:
+            try:
+                posts = json.load(f)
+            except json.JSONDecodeError:
+                continue
+
+        for post in posts:
+            sub = post.get("submission", {})
+            target = sub.get("target")
+            if target is None:
+                continue
+            title = sub.get("title") or ""
+            body = sub.get("body") or ""
+            text = (title + " " + body).strip()
+            if len(text) > 20:
+                rows.append({"text": text, "label": int(bool(target))})
+
+    df = pd.DataFrame(rows)
+    df["text"] = df["text"].apply(clean_text)
+    df = df[df["text"].str.len() > 10].drop_duplicates(subset=["text"])
+
+    if max_samples and len(df) > max_samples:
+        from sklearn.model_selection import train_test_split as _split
+        df, _ = _split(df, train_size=max_samples, random_state=random_state, stratify=df["label"])
+
+    logger.info(f"eRisk25 : {len(df)} posts | distribution:\n{df['label'].value_counts()}")
+    return df.reset_index(drop=True)
+
+
 def load_smhd(csv_path: str | Path) -> pd.DataFrame:
     """
     Charge le dataset SMHD (Self-reported Mental Health Diagnoses).
@@ -159,6 +216,7 @@ def build_dataset(
     kaggle_path: str | Path | None = None,
     use_dair: bool = True,
     use_go_emotions: bool = False,
+    erisk25_path: str | Path | None = None,
     smhd_path: str | Path | None = None,
     kaggle_max_samples: int = 100_000,
     test_size: float = 0.2,
@@ -171,7 +229,8 @@ def build_dataset(
       1. Kaggle reddit depression (vrai Reddit, 2.47M posts)
       2. DAIR-AI/emotion (diversité stylistique)
       3. GoEmotions (Reddit, labels fins, qualité Google)
-      4. SMHD (si accès obtenu — qualité clinique)
+      4. eRisk25 (CLEF 2025 — labels cliniques dépression, qualité maximale)
+      5. SMHD (si accès obtenu — 9 troubles mentaux)
     """
     from sklearn.model_selection import train_test_split
 
@@ -185,6 +244,8 @@ def build_dataset(
         frames.append(load_go_emotions("train"))
         frames.append(load_go_emotions("validation"))
         frames.append(load_go_emotions("test"))
+    if erisk25_path:
+        frames.append(load_erisk25(erisk25_path))
     if smhd_path:
         frames.append(load_smhd(smhd_path))
 
