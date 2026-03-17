@@ -14,6 +14,12 @@ DATA_FILENAME = "reddit_depression_dataset.csv"
 
 
 def test_clean_data():
+    """
+    Test the clean_data function by creating a sample DataFrame with
+    duplicates and missing values,
+    and checking if the cleaned DataFrame has no duplicates,
+    no missing values, and only the relevant columns.
+    """
     # Création d'un Dataframe de test pour ne pas avoir à load_data
     df = pd.DataFrame(
         [
@@ -57,6 +63,9 @@ def test_clean_data():
 
 
 def test_balance_classes():
+    """
+    Test class balancing
+    """
     df = pd.DataFrame(
         {
             "text": ["a", "b", "c", "d", "e", "f", "g", "h"],

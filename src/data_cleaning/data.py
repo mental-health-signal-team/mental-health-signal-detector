@@ -49,11 +49,14 @@ def download_data() -> None:
 
 
 def load_data() -> pd.DataFrame:
+    """Load the dataset from the CSV file."""
     df = pd.read_csv(_get_project_data_dir() / DATA_FILENAME)
     return df
 
 
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
+    """Clean the dataset by removing duplicates, handling missing values,
+    and balancing classes."""
     # Remove duplicates
     df = df.drop_duplicates()
     # Remove na_values for those who haven't not a lot of na
@@ -94,6 +97,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def balance_classes(df, label_col, random_state=42):
+    """Balance the classes in the dataset."""
     class_counts = df[label_col].value_counts()
     min_count = class_counts.min()
     balanced_df = pd.DataFrame()
