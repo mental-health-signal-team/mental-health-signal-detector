@@ -2,3 +2,5 @@ kagglehub
 kaggle
 scikit-image
 pandas
+nltk
+scikit-learn
