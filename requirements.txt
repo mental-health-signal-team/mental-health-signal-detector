@@ -4,22 +4,23 @@ numpy==1.26.4
 kaggle==1.6.17
 
 # NLP & ML
-scikit-learn==1.4.2
-transformers==4.40.1
-torch==2.3.0
+scikit-learn>=1.5.0       # PYSEC-2024-110 (was 1.4.2)
+transformers>=4.48.0      # CVE-2024-12720, PYSEC-2024-227/228/229 (was 4.40.1)
+torch>=2.5.0              # PYSEC-2024-259 (was 2.3.0)
 datasets==2.19.1
 accelerate>=0.21.0
 shap==0.45.0
 matplotlib==3.9.0
 
 # API
-fastapi==0.111.0
+fastapi>=0.115.0          # pulls starlette>=0.40.0 (CVE-2024-47874, was 0.111.0)
+starlette>=0.47.2         # CVE-2025-54121 (explicit pin)
 uvicorn[standard]==0.29.0
 pydantic==2.7.1
 pydantic-settings==2.2.1
 
 # Dashboard
-streamlit==1.35.0
+streamlit>=1.37.0         # PYSEC-2024-153 (was 1.35.0)
 
 # Reddit (pour plus tard)
 praw==7.7.1
@@ -32,6 +33,7 @@ psycopg2-binary==2.9.9
 python-dotenv==1.0.1
 pyyaml==6.0.1
 loguru==0.7.2
+pillow>=12.1.1            # CVE-2026-25990
 
 # Langue
 langdetect==1.0.9
