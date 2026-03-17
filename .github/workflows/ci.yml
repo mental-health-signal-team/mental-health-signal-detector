@@ -49,4 +49,4 @@ jobs:
         run: pip install pytest
 
       - name: Run tests
-        run: pytest tests/
+        run: pytest tests/ || [ $? -eq 5 ]  # exit 5 = no tests collected, allowed while test suite is being built
