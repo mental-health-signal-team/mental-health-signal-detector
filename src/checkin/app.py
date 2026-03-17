@@ -5,16 +5,37 @@ Phase 2 — Mental Health Signal Detector
 
 import os
 import re
+import urllib.parse
 import requests
 import gradio as gr
 
-_raw_url = os.getenv("API_URL", "http://localhost:8000")
-_normalized_url = _raw_url.rstrip("/")
-# Autorise uniquement http(s)://host:port — bloque les redirections internes (SSRF)
-if not re.fullmatch(r"https?://[\w.\-]+(:\d+)?", _normalized_url):
-    API_URL = "http://localhost:8000"
-else:
-    API_URL = _normalized_url
+# Plages d'adresses privées/internes à bloquer en production (RFC 1918 + loopback + link-local)
+_PRIVATE_HOST = re.compile(
+    r"^(127\.\d+\.\d+\.\d+|::1"
+    r"|10\.\d+\.\d+\.\d+"
+    r"|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+"
+    r"|192\.168\.\d+\.\d+"
+    r"|169\.254\.\d+\.\d+"
+    r")$"
+)
+_ENV = os.getenv("ENV", "development")
+
+
+def _validate_api_url(raw: str) -> str:
+    """Valide API_URL : format http(s), et en production bloque les hôtes internes."""
+    url = raw.rstrip("/")
+    if not re.fullmatch(r"https?://[\w.\-]+(:\d+)?", url):
+        return "http://localhost:8000"
+    host = urllib.parse.urlparse(url).hostname or ""
+    if _ENV != "development" and _PRIVATE_HOST.match(host):
+        # En production, une URL interne dans API_URL est suspecte (SSRF config)
+        import warnings
+        warnings.warn(f"API_URL pointe vers un hôte interne en production : {host!r} — fallback localhost")
+        return "http://localhost:8000"
+    return url
+
+
+API_URL = _validate_api_url(os.getenv("API_URL", "http://localhost:8000"))
 
 LEVEL_ICONS = {"green": "✅", "yellow": "💛", "red": "🆘"}
 

@@ -151,17 +151,6 @@ class TestUniqueIds:
         assert len(set(ids)) == 5
 
 
-# ─── GET /checkin/reminders ───────────────────────────────────────────────────
-
-class TestListReminders:
-    def test_returns_list(self, client):
-        resp = client.get("/checkin/reminders")
-        assert resp.status_code == 200
-        assert isinstance(resp.json(), list)
-
-    def test_stored_reminder_appears_in_list(self, client):
-        post_resp = client.post("/checkin/reminder", json={"offset": "4h", "mode": "adult"})
-        created_id = post_resp.json()["id"]
-        list_resp = client.get("/checkin/reminders")
-        ids = [r["id"] for r in list_resp.json()]
-        assert created_id in ids
+# GET /checkin/reminders supprimé — tests retirés avec l'endpoint.
+# Raison : exposait emotion_id + distress_level de tous les utilisateurs
+# sans authentification (fuite inter-utilisateurs, RGPD art. 9).

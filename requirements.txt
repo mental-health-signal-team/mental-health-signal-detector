@@ -38,4 +38,4 @@ slowapi>=0.1.9            # Rate limiting pour FastAPI
 
 # Langue
 langdetect==1.0.9
-deep-translator==1.11.4
+deep-translator==1.11.4  # PYSEC-2022-252 : proxies non utilisé → voir .pip-audit-ignore

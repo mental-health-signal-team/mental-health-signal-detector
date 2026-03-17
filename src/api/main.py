@@ -67,11 +67,26 @@ _MAX_REQUEST_BODY = 64 * 1024  # 64 KB — textes longs refusés (prompt injecti
 
 
 class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
-    """Rejette les requêtes dont le body dépasse _MAX_REQUEST_BODY octets."""
+    """
+    Rejette les requêtes dont le body dépasse _MAX_REQUEST_BODY octets.
+
+    Lit les octets réels du body (pas seulement Content-Length) pour couvrir
+    le transfert chunked et les clients qui omettent ou falsifient l'en-tête.
+    Starlette met le body en cache après la première lecture — les handlers
+    appelés via call_next peuvent relire request.body() sans overhead.
+    """
 
     async def dispatch(self, request: Request, call_next):
+        # Rejet rapide sur Content-Length déclaré (évite de lire inutilement)
         content_length = request.headers.get("content-length")
         if content_length and int(content_length) > _MAX_REQUEST_BODY:
+            return JSONResponse(
+                status_code=413,
+                content={"detail": f"Corps de requête trop grand (max {_MAX_REQUEST_BODY // 1024} KB)."},
+            )
+        # Lecture réelle pour couvrir chunked transfer et Content-Length absent/inexact
+        body = await request.body()
+        if len(body) > _MAX_REQUEST_BODY:
             return JSONResponse(
                 status_code=413,
                 content={"detail": f"Corps de requête trop grand (max {_MAX_REQUEST_BODY // 1024} KB)."},

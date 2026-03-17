@@ -98,10 +98,5 @@ def reminder_endpoint(request: ReminderRequest) -> ReminderResponse:
     return ReminderResponse(**reminder)
 
 
-@router.get("/reminders", response_model=list[ReminderResponse])
-def list_reminders() -> list[ReminderResponse]:
-    """
-    Liste tous les rappels en mémoire (utile pour le dashboard / monitoring).
-    Retournés du plus récent au plus ancien.
-    """
-    return [ReminderResponse(**r) for r in reversed(_reminders)]
+# GET /checkin/reminders supprimé — exposait emotion_id + distress_level
+# de tous les utilisateurs sans authentification (fuite inter-utilisateurs, RGPD art. 9).

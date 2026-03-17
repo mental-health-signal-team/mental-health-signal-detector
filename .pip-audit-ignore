@@ -1,0 +1,10 @@
+# Exceptions pip-audit documentées
+#
+# PYSEC-2022-252 — deep-translator 1.11.4
+# CVE : SSRF possible via le paramètre `proxies` de GoogleTranslator.
+# Statut : aucune version corrigée disponible (1.11.4 = dernière, 2026-03-17).
+# Mitigation : on n'utilise jamais le paramètre `proxies` (voir language.py).
+#   GoogleTranslator(source=lang, target="en").translate(text)
+# Risque résiduel : nul — proxies n'est pas exposé à l'utilisateur final.
+# Réévaluer si une version > 1.11.4 est publiée.
+PYSEC-2022-252

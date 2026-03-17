@@ -5,20 +5,36 @@ Saisie d'un texte → score de risque + explication
 
 import os
 import re
+import urllib.parse
 
 import pandas as pd
 import requests
 import streamlit as st
 
-_raw_url = os.getenv("API_URL", "http://localhost:8000")
-# Normaliser avant validation : un slash final (http://host:8000/) est courant
-# et ne constitue pas un risque SSRF — le rejeter serait un faux positif silencieux.
-_normalized_url = _raw_url.rstrip("/")
-# Autorise uniquement http(s)://host:port — bloque les URLs internes arbitraires (SSRF)
-if not re.fullmatch(r"https?://[\w.\-]+(:\d+)?", _normalized_url):
-    API_URL = "http://localhost:8000"
-else:
-    API_URL = _normalized_url
+# Plages privées/internes bloquées en production (RFC 1918 + loopback + link-local)
+_PRIVATE_HOST = re.compile(
+    r"^(127\.\d+\.\d+\.\d+|::1"
+    r"|10\.\d+\.\d+\.\d+"
+    r"|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+"
+    r"|192\.168\.\d+\.\d+"
+    r"|169\.254\.\d+\.\d+"
+    r")$"
+)
+_ENV = os.getenv("ENV", "development")
+
+
+def _validate_api_url(raw: str) -> str:
+    url = raw.rstrip("/")
+    if not re.fullmatch(r"https?://[\w.\-]+(:\d+)?", url):
+        return "http://localhost:8000"
+    host = urllib.parse.urlparse(url).hostname or ""
+    if _ENV != "development" and _PRIVATE_HOST.match(host):
+        st.warning(f"API_URL pointe vers un hôte interne en production ({host!r}) — fallback localhost")
+        return "http://localhost:8000"
+    return url
+
+
+API_URL = _validate_api_url(os.getenv("API_URL", "http://localhost:8000"))
 
 st.set_page_config(
     page_title="Mental Health Signal Detector",
