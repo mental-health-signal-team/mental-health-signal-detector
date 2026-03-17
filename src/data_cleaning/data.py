@@ -101,11 +101,11 @@ def balance_classes(df, label_col, random_state=42):
     """Balance the classes in the dataset."""
     class_counts = df[label_col].value_counts()
     min_count = class_counts.min()
-    balanced_df = pd.DataFrame()
+    balanced_dfs = []
 
     for label in class_counts.index:
         label_df = df[df[label_col] == label]
-        balanced_label_df = label_df.sample(min_count, random_state=random_state)
-        balanced_df = pd.concat([balanced_df, balanced_label_df])
+        balanced_dfs.append(label_df.sample(min_count, random_state=random_state))
 
+    balanced_df = pd.concat(balanced_dfs)
     return balanced_df.sample(frac=1, random_state=random_state).reset_index(drop=True)
