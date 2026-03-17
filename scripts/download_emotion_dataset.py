@@ -4,6 +4,9 @@ from datasets import load_dataset
 
 
 def download_emotion_dataset(target_dir="data/raw"):
+    """
+    Download the emotion dataset from Hugging Face and save it to a CSV file.
+    """
     os.makedirs(target_dir, exist_ok=True)
     print("Downloading dair-ai/emotion unsplit dataset from Hugging Face...")
     dataset = load_dataset("emotion", "unsplit")

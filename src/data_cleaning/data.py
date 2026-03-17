@@ -1,36 +1,63 @@
-import os
+from pathlib import Path
 
 import kagglehub
 import pandas as pd
-from kaggle.api.kaggle_api_extended import KaggleApi
 
-import src.common.config as config
+DATA_FILENAME = "reddit_depression_dataset.csv"
+
+
+def _get_project_data_dir() -> Path:
+    """Resolve the data directory independently from the current working directory."""
+    current_file = Path(__file__).resolve()
+
+    # Prefer a location that already contains the target dataset file.
+    for parent in current_file.parents:
+        candidate = parent / "data"
+        if (candidate / DATA_FILENAME).exists():
+            return candidate
+
+    # Fallback to the first existing "data" directory found while walking up.
+    for parent in current_file.parents:
+        candidate = parent / "data"
+        if candidate.exists():
+            return candidate
+
+    # Last resort: create a data directory at the project level.
+    fallback = current_file.parents[2] / "data"
+    fallback.mkdir(parents=True, exist_ok=True)
+    return fallback
 
 
 def download_data() -> None:
     """Load the dataset from the Kaggle API."""
+    from kaggle.api.kaggle_api_extended import KaggleApi
+
     # Initialize Kaggle API
     api = KaggleApi()
     api.authenticate()
 
-    data_dir = config.DATA_DIR
-    expected_file = os.path.join(data_dir, "reddit_depression_dataset.csv")
+    data_dir = _get_project_data_dir()
+    expected_file = data_dir / DATA_FILENAME
 
-    if os.path.exists(expected_file):
+    if expected_file.exists():
         print("Dataset déjà téléchargé, téléchargement ignoré.")
     else:
         kagglehub.dataset_download(
-            "rishabhkausish/reddit-depression-dataset", output_dir=data_dir
+            "rishabhkausish/reddit-depression-dataset",
+            output_dir=str(data_dir),
         )
         print("Dataset téléchargé.")
 
 
 def load_data() -> pd.DataFrame:
-    df = pd.read_csv(config.DATA_DIR + "/reddit_depression_dataset.csv")
+    """Load the dataset from the CSV file."""
+    df = pd.read_csv(_get_project_data_dir() / DATA_FILENAME)
     return df
 
 
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
+    """Clean the dataset by removing duplicates, handling missing values,
+    and balancing classes."""
     # Remove duplicates
     df = df.drop_duplicates()
     # Remove na_values for those who haven't not a lot of na
@@ -50,7 +77,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     # On drop les colonnes qui ne sont pas utiles
     # On va fusionner les colonnes de texte body et title
     sub_df = df[["title", "body"]]
-    text = sub_df["title"] + " " + sub_df["body"]
+    text = sub_df["title"].fillna("") + " " + sub_df["body"].fillna("")
     df["title"] = text
     df.drop(
         columns=[
@@ -71,6 +98,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def balance_classes(df, label_col, random_state=42):
+    """Balance the classes in the dataset."""
     class_counts = df[label_col].value_counts()
     min_count = class_counts.min()
     balanced_df = pd.DataFrame()
