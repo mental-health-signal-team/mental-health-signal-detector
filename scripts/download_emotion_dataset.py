@@ -1,5 +1,7 @@
 import os
+
 from datasets import load_dataset
+
 
 def download_emotion_dataset(target_dir="data/raw"):
     os.makedirs(target_dir, exist_ok=True)
@@ -10,6 +12,7 @@ def download_emotion_dataset(target_dir="data/raw"):
     dataset["train"].to_csv(out_path, index=False)
     print(f"Saved unsplit split to {out_path}")
     print(f"Rows saved: {dataset['train'].num_rows}")
+
 
 if __name__ == "__main__":
     download_emotion_dataset()
