@@ -21,11 +21,22 @@ src/
 
 ## Modèles
 
-| Modèle | Dataset | Accuracy | F1 détresse |
-|--------|---------|----------|-------------|
-| Baseline TF-IDF + LR | 388K (Kaggle+DAIR-AI+GoEmotions+eRisk25) | 88.9% | 83% |
-| DistilBERT fine-tuné | DAIR-AI 16K (v1) | 96.8% | — |
-| DistilBERT v2 *(en cours)* | 388K combiné | *en cours* | — |
+| Modèle | Dataset | Accuracy | F1 Macro | Notes |
+|--------|---------|----------|----------|-------|
+| Baseline TF-IDF + LR | 388K | 88.9% | — | Référence prod |
+| DistilBERT v1 | DAIR-AI 16K | 96.8% | — | Fine-tuning initial |
+| **DistilBERT v2** | **388K combiné** | **89.0%** | **86.5%** | **Best epoch 2 / 3** |
+| DistilBERT v2.1 *(prêt)* | 388K + CustomTrainer | — | — | EarlyStop + class weights |
+
+DistilBERT v2 — résultats Colab T4 GPU (3 epochs, batch=32) :
+
+| Epoch | Train Loss | Val Loss | Accuracy | F1 Macro |
+|-------|-----------|----------|----------|----------|
+| 1 | 0.294 | 0.284 | 88.5% | 85.4% |
+| **2** | **0.229** | **0.283** | **89.0%** | **86.5%** ✅ |
+| 3 | 0.114 | 0.348 | 88.97% | 86.5% (overfit) |
+
+> `load_best_model_at_end=True` → checkpoint epoch 2 conservé. Bat le baseline LR (78.6% sur eRisk25).
 
 ---
 
@@ -122,14 +133,25 @@ python -m src.training.train \
   --go-emotions \
   --erisk25-path data/raw/erisk25/ \
   --kaggle-samples 100000
-
-# DistilBERT v2 → notebook Colab
-# notebooks/distilbert_finetune_colab.ipynb
 ```
+
+**DistilBERT v2/v2.1 → Google Colab (GPU T4 requis)**
+
+```
+notebooks/distilbert_finetune_colab.ipynb
+```
+
+Améliorations v2.1 intégrées dans le notebook :
+- `CustomTrainer` avec `CrossEntropyLoss` pondérée (class imbalance 34/66)
+- `EarlyStoppingCallback(patience=1)` sur `f1_macro`
+- `num_train_epochs=5` + `greater_is_better=True`
+- Poids calculés depuis les données réelles via `sklearn.compute_class_weight`
 
 ---
 
 ## Sécurité appliquée
+
+### Revue 1 — P0/P1 (2026-03-17)
 
 | Niveau | Correction | Fichier |
 |--------|-----------|---------|
@@ -138,11 +160,22 @@ python -m src.training.train \
 | P0 | `joblib.load` restreint au dossier `models/` | `src/training/predict.py` |
 | P1 | Emoji validé par pattern Pydantic (5 valeurs) | `src/checkin/schemas.py` |
 | P1 | Texte : `min_length=1`, `max_length=1000` | `src/checkin/schemas.py` |
-| P1 | Middleware taille requête 64 KB (DoS) | `src/api/main.py` |
+| P1 | Middleware 64 KB — octets réels lus (anti-DoS/chunked) | `src/api/main.py` |
 | P1 | `/health` retourne 503 sur erreur inattendue | `src/api/main.py` |
-| P1 | `API_URL` validé regex contre SSRF | `src/checkin/app.py`, `src/dashboard/app.py` |
+| P1 | `API_URL` validé regex + IPs privées bloquées en prod | `src/checkin/app.py`, `src/dashboard/app.py` |
 | P1 | Rate limiting slowapi : 20/min checkin, 30/min predict, 10/min explain | `src/api/rate_limit.py` |
-| P1 | CORS restreint via `ALLOWED_ORIGINS` en production | `src/api/main.py` |
+| P1 | CORS restreint via `ALLOWED_ORIGINS` env en production | `src/api/main.py` |
+
+### Revue 2 — findings (2026-03-17)
+
+| Sévérité | Correction | Fichier |
+|----------|-----------|---------|
+| High | `GET /checkin/reminders` supprimé (fuite inter-utilisateurs, RGPD art. 9) | `src/api/checkin_router.py` |
+| Medium | Middleware taille : lecture octets réels (couvre chunked transfer) | `src/api/main.py` |
+| Medium | PYSEC-2022-252 deep-translator documenté (`.pip-audit-ignore`) | `requirements.txt` |
+| Low | SSRF : blocage RFC-1918 + loopback + link-local en production | `src/checkin/app.py` |
+
+### Posture actuelle — `ruff` ✅ · `pip-audit` ✅ (1 exception documentée) · 76/76 tests ✅
 
 ---
 
