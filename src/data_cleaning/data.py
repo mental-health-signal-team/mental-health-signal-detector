@@ -92,7 +92,9 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     df.dropna(inplace=True)
-    df = balance_classes(df, label_col="label")
+    # df = balance_classes(df, label_col="label")
+    # #we can do it later if we want to test the model on an unbalanced dataset,
+    # which is more realistic
 
     return df
 

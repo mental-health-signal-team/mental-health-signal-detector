@@ -45,6 +45,7 @@ kaggle.json
 .config/kaggle/kaggle.json
 
 # Data and artifacts
+data/
 data/raw/
 data/processed/
 data/external/
