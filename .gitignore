@@ -1,59 +1,141 @@
-# OS / Editor
+# DS Store
 .DS_Store
-.python-version
-.vscode/
-.idea/
 
-# Python cache / build
+# VS Code
+.vscode/
+
+# ML model artifacts (too large for git)
+*.pt
+*.pth
+*.safetensors
+outputs/
+checkpoints/
+cache_dir/
+
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
-*.so
-*.egg-info/
-.eggs/
-build/
-dist/
+*$py.class
 
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 # Virtual environments
 .venv/
 venv/
 .env/
 
-# Test / coverage / typing
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
 .coverage
 .coverage.*
-htmlcov/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
 
-# Jupyter
-.ipynb_checkpoints/
+# pytest
+.pytest_cache
 
-# Logs and temp files
+# Translations
+*.mo
+*.pot
+
+# nbgrader
+gradebbook.db
+
+# Django stuff:
 *.log
-logs/
-tmp/
-temp/
+local_settings.py
 
-# Local environment and secrets
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+**/.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# celery beat schedule file
+celerybeat-schedule
+
+# SageMath parsed files
+*.sage.py
+
+# dotenv
 .env
-.env.*
-!.env.example
-kaggle.json
-.config/kaggle/kaggle.json
 
-# Data and artifacts
-data/raw/
-data/processed/
-data/external/
-models/
-artifacts/
+# exclude virtual envs
+.venv
+venv/
+ENV/
+*venv*
 
-# Streamlit
-.streamlit/secrets.toml
+# Spyder project settings
+.spyderproject
+.spyproject
 
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+
+# Big datasets
+data/
+yolov5/
+mlartifacts/
+mlruns/
+
+# Intellij
+.idea/
+
+# AutoPush
+Automate
 # Docker
 docker/.env
 
