@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { computeSolution } from "../lib/solutionEngine";
 import { API_BASE } from "../lib/api";
+import { saveSession, getSessions, getTrend } from "../lib/sessionHistory";
+import type { SessionRecord, Trend } from "../lib/sessionHistory";
 import type { DiagnosticProfile, ClinicalDimension } from "../types/diagnostic";
 import type { SolutionResponse, MicroAction, Resource, TherapeuticBrick } from "../types/solutions";
 
@@ -186,10 +188,34 @@ export default function Solutions() {
   const [journalText, setJournalText] = useState("");
   const [breathPhase, setBreathPhase] = useState<"inhale" | "exhale">("inhale");
 
+  // Historique de sessions — chargé une fois au montage
+  const [trend, setTrend] = useState<Trend | null>(null);
+  const [historyLength, setHistoryLength] = useState(0);
+  const sessionSavedRef = useRef(false);
+
   // Guard : accès direct sans flow → redirection
   useEffect(() => {
     if (!diagnosticProfile) navigate("/", { replace: true });
   }, [diagnosticProfile, navigate]);
+
+  // Sauvegarde de la session + calcul de tendance (une seule fois au montage)
+  useEffect(() => {
+    if (!diagnosticProfile || !solution || sessionSavedRef.current) return;
+    sessionSavedRef.current = true;
+
+    const record: SessionRecord = {
+      date:           new Date().toISOString(),
+      level:          solution.level,
+      emotionId:      diagnosticProfile.emotionId,
+      finalScore:     diagnosticProfile.finalScore,
+      clinicalProfile: diagnosticProfile.clinicalProfile,
+    };
+    saveSession(record);
+
+    const sessions = getSessions();
+    setHistoryLength(sessions.length);
+    setTrend(getTrend(sessions));
+  }, [diagnosticProfile, solution]);
 
   // Cleanup au démontage
   useEffect(() => {
@@ -424,6 +450,45 @@ export default function Solutions() {
                 </div>
               </div>
             )}
+
+            {/* Tendance longitudinale — visible dès la 2e session */}
+            {trend !== null && historyLength >= 2 && (
+              <div className="flex items-center gap-3 mt-1 pt-2 border-t border-gray-100">
+                <span className="text-xs text-gray-500 w-16 shrink-0">Évolution</span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                    trend === "improving" ? "bg-emerald-100 text-emerald-700"
+                    : trend === "worsening" ? "bg-orange-100 text-orange-700"
+                    : "bg-gray-100 text-gray-600"
+                  }`}>
+                    {trend === "improving" ? "↓ en amélioration"
+                     : trend === "worsening" ? "↑ dégradation"
+                     : "→ stable"}
+                  </span>
+                  <span className="text-xs text-gray-400">vs session précédente</span>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* Tendance simplifiée — mode enfant, dès 2e session, niveaux 0-3 */}
+        {mode === "kids" && trend !== null && historyLength >= 2 && solution.level < 4 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.38 }}
+            className={`rounded-2xl px-4 py-3 text-sm text-center ${
+              trend === "improving" ? "bg-emerald-50 text-emerald-700"
+              : trend === "worsening" ? "bg-orange-50 text-orange-700"
+              : "bg-sky-50 text-sky-700"
+            }`}
+          >
+            {trend === "improving"
+              ? "Tu progresses — c'est vraiment bien !"
+              : trend === "worsening"
+              ? "Ça semble plus difficile aujourd'hui. Tu n'es pas seul."
+              : "Tu continues à prendre soin de toi."}
           </motion.div>
         )}
 
