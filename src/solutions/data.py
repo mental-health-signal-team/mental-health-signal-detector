@@ -38,7 +38,7 @@ RESOURCES: dict[str, Resource] = {
         label="Mon Soutien Psy",
         detail="Séances remboursées avec psychologue conventionné",
         type="website",
-        href="https://www.info.gouv.fr/actualite/mon-soutien-psy-12-seances-remboursees-par-an",
+        href="https://www.has-sante.fr/jcms/p_3333615/fr/mon-soutien-psy",
     ),
     "psycom": Resource(
         id="psycom",
