@@ -103,9 +103,7 @@ def test_preprocess_text(monkeypatch):
         return [(token, tag_map.get(token, "NN")) for token in tokens]
 
     monkeypatch.setattr(preprocess_module, "word_tokenize", fake_word_tokenize)
-    monkeypatch.setattr(
-        preprocess_module, "_get_stop_words", lambda: {"are", "and", "i", "am", "at"}
-    )
+    monkeypatch.setattr(preprocess_module, "_get_stop_words", lambda: {"are", "and", "i", "am", "at"})
     monkeypatch.setattr(preprocess_module.nltk, "pos_tag", fake_pos_tag)
     monkeypatch.setattr(preprocess_module, "_LEMMATIZER", FakeLemmatizer())
 
@@ -120,12 +118,8 @@ def test_preprocess_text(monkeypatch):
     assert "are" not in cleaned
     assert "and" not in cleaned
 
-    cleaned2 = preprocess_text(
-        text2, remove_stopwords=False, remove_punctuation=False, lemmatize=False
-    )
+    cleaned2 = preprocess_text(text2, remove_stopwords=False, remove_punctuation=False, lemmatize=False)
     assert cleaned2 == "i am at home ."
 
-    cleaned3 = preprocess_text(
-        text3, remove_stopwords=False, remove_punctuation=True, lemmatize=True
-    )
+    cleaned3 = preprocess_text(text3, remove_stopwords=False, remove_punctuation=True, lemmatize=True)
     assert cleaned3 == "play good car"

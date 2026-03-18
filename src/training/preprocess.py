@@ -67,9 +67,7 @@ def _wordnet_pos(treebank_tag: str) -> str:
     return "n"
 
 
-def preprocess_text(
-    text, remove_stopwords=True, remove_punctuation=True, lemmatize=True
-):
+def preprocess_text(text, remove_stopwords=True, remove_punctuation=True, lemmatize=True):
     """
     Preprocess the input text by
     normalizing, tokenizing, removing stop words and punctuation and lemmatizing.
@@ -79,9 +77,7 @@ def preprocess_text(
     tokens = [t.lower() for t in tokens]
 
     if remove_punctuation:
-        tokens = [
-            t for t in tokens if t in {"!", "?"} or re.fullmatch(r"[a-z0-9_]+", t)
-        ]
+        tokens = [t for t in tokens if t in {"!", "?"} or re.fullmatch(r"[a-z0-9_]+", t)]
 
     if remove_stopwords:
         stop_words = _get_stop_words()
@@ -119,9 +115,7 @@ def clean_text(text: str) -> str:
     text = re.sub(r"#(\w+)", r" hashtag_\1 ", text)
 
     # Convert common emoticons and Unicode emojis to signal tokens.
-    text = re.sub(
-        r"(:\)|:-\)|:d|:-d|<3|;\))", " emoji_positive ", text, flags=re.IGNORECASE
-    )
+    text = re.sub(r"(:\)|:-\)|:d|:-d|<3|;\))", " emoji_positive ", text, flags=re.IGNORECASE)
     text = re.sub(
         r"(:\(|:-\(|:'\(|:'-\(|:/|:-/|:\|)",
         " emoji_negative ",
@@ -147,9 +141,7 @@ def clean_text(text: str) -> str:
     text = re.sub(r"!{2,}", " exclam_repeat ", text)
     text = re.sub(r"\?{2,}", " question_repeat ", text)
 
-    punctuation_to_remove = (
-        string.punctuation.replace("!", "").replace("?", "").replace("'", "")
-    )
+    punctuation_to_remove = string.punctuation.replace("!", "").replace("?", "").replace("'", "")
     text = re.sub(f"[{re.escape(punctuation_to_remove)}]", "", text)
 
     # Reduce elongated forms while preserving emphasis signal.

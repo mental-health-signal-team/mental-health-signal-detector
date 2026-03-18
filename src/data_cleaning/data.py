@@ -71,9 +71,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     mask = (~unnamed_is_numeric) & title_is_numeric
 
     # 3) Inversion des valeurs entre les 2 colonnes sur ces lignes
-    df.loc[mask, ["Unnamed: 0", "title"]] = df.loc[
-        mask, ["title", "Unnamed: 0"]
-    ].to_numpy()
+    df.loc[mask, ["Unnamed: 0", "title"]] = df.loc[mask, ["title", "Unnamed: 0"]].to_numpy()
     # On drop les colonnes qui ne sont pas utiles
     # On va fusionner les colonnes de texte body et title
     sub_df = df[["title", "body"]]
