@@ -8,7 +8,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Dépendances Python
+# PyTorch CPU-only — avant requirements.txt pour éviter le téléchargement CUDA (~4GB)
+RUN pip install --no-cache-dir \
+    torch>=2.5.0 \
+    --index-url https://download.pytorch.org/whl/cpu
+
+# Reste des dépendances (torch déjà installé, sera réutilisé)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -16,8 +21,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src/ ./src/
 COPY configs/ ./configs/
 
-# Modèle (doit exister avant le build)
-COPY models/ ./models/
+# models/ exclu du build context via .dockerignore — monté en volume via docker-compose
+# Pour un build standalone : docker run -v $(pwd)/models:/app/models ...
 
 ENV PYTHONPATH=/app
 ENV TRANSFORMERS_NO_TF=1
