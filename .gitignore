@@ -106,11 +106,21 @@ celerybeat-schedule
 # dotenv
 .env
 
+<<<<<<< HEAD
 # exclude virtual envs
 .venv
 venv/
 ENV/
 *venv*
+=======
+# Data and artifacts
+data/
+data/raw/
+data/processed/
+data/external/
+models/
+artifacts/
+>>>>>>> main
 
 # Spyder project settings
 .spyderproject
