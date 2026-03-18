@@ -41,6 +41,7 @@ export interface Resource {
   detail: string;
   type: ResourceType;
   href?: string;            // tel:3114, https://...
+  website?: string;         // Lien secondaire "Voir le site →" (pour ressources téléphoniques)
   urgent: boolean;          // true = afficher en premier, style alerte
 }
 

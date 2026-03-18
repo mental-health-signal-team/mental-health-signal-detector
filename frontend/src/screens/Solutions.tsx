@@ -130,6 +130,20 @@ function ResourceCard({ resource, index }: { resource: Resource; index: number }
         <div className={`text-xs mt-0.5 ${resource.urgent ? "text-white/80" : "text-gray-500"}`}>
           {resource.detail}
         </div>
+        {resource.website && (
+          <a
+            href={resource.website}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className={`inline-flex items-center gap-1 text-xs mt-1 underline underline-offset-2 ${
+              resource.urgent ? "text-white/70 hover:text-white" : "text-teal-500 hover:text-teal-700"
+            }`}
+          >
+            Voir le site
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        )}
       </div>
     </div>
   );

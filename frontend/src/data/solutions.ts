@@ -37,6 +37,7 @@ export const RESOURCES: Record<string, Resource> = {
     detail: "0 800 235 236 — Gratuit, anonyme",
     type: "phone",
     href: "tel:0800235236",
+    website: "https://www.filsantejeunes.com",
     urgent: false,
   },
   monSoutienPsy: {
@@ -60,6 +61,7 @@ export const RESOURCES: Record<string, Resource> = {
     label: "Médecin traitant",
     detail: "Premier interlocuteur — orientation spécialisée",
     type: "person",
+    website: "https://www.ameli.fr",
     urgent: false,
   },
   proche: {
@@ -90,6 +92,7 @@ export const RESOURCES: Record<string, Resource> = {
     detail: "Gratuit, anonyme, confidentiel, 7j/7 · 9h–23h — réseaux sociaux et internet",
     type: "phone",
     href: "tel:3018",
+    website: "https://www.e-enfance.org",
     urgent: false,
   },
   harcelementScolaire: {
@@ -98,6 +101,7 @@ export const RESOURCES: Record<string, Resource> = {
     detail: "Gratuit, lun–ven · 9h–20h — harcèlement à l'école",
     type: "phone",
     href: "tel:3020",
+    website: "https://www.nonauharcelement.education.gouv.fr",
     urgent: false,
   },
   violencesFemmes: {
@@ -106,6 +110,7 @@ export const RESOURCES: Record<string, Resource> = {
     detail: "Gratuit, anonyme, 24h/24 — femmes victimes de violences",
     type: "phone",
     href: "tel:3919",
+    website: "https://arretonslesviolences.gouv.fr",
     urgent: true,
   },
 };

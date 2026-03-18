@@ -32,6 +32,7 @@ RESOURCES: dict[str, Resource] = {
         detail="0 800 235 236 — Gratuit, anonyme, 9h–23h",
         type="phone",
         href="tel:0800235236",
+        website="https://www.filsantejeunes.com",
     ),
     "monSoutienPsy": Resource(
         id="mon-soutien-psy",
@@ -52,6 +53,7 @@ RESOURCES: dict[str, Resource] = {
         label="Médecin traitant",
         detail="Premier interlocuteur — peut orienter vers un spécialiste",
         type="person",
+        website="https://www.ameli.fr",
     ),
     "proche": Resource(
         id="proche",
@@ -79,6 +81,7 @@ RESOURCES: dict[str, Resource] = {
         detail="Gratuit, anonyme, confidentiel, 7j/7 · 9h–23h — réseaux sociaux et internet",
         type="phone",
         href="tel:3018",
+        website="https://www.e-enfance.org",
     ),
     "harcelementScolaire": Resource(
         id="3020",
@@ -86,6 +89,7 @@ RESOURCES: dict[str, Resource] = {
         detail="Gratuit, lun–ven · 9h–20h — harcèlement à l'école",
         type="phone",
         href="tel:3020",
+        website="https://www.nonauharcelement.education.gouv.fr",
     ),
     "violencesFemmes": Resource(
         id="3919",
@@ -93,6 +97,7 @@ RESOURCES: dict[str, Resource] = {
         detail="Gratuit, anonyme, 24h/24 — femmes victimes de violences",
         type="phone",
         href="tel:3919",
+        website="https://arretonslesviolences.gouv.fr",
         urgent=True,
     ),
 }
