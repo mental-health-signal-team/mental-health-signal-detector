@@ -30,7 +30,7 @@ def _validate_api_url(raw: str) -> str:
     if _ENV != "development" and _PRIVATE_HOST.match(host):
         # En production, une URL interne dans API_URL est suspecte (SSRF config)
         import warnings
-        warnings.warn(f"API_URL pointe vers un hôte interne en production : {host!r} — fallback localhost")
+        warnings.warn(f"API_URL pointe vers un hôte interne en production : {host!r} — fallback localhost", stacklevel=2)
         return "http://localhost:8000"
     return url
 
@@ -335,4 +335,4 @@ En cas d'urgence, appelle le **15 (SAMU)** ou le **3114**.</small>
 
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7860, share=False)
+    demo.launch(server_name="0.0.0.0", server_port=7860, share=False)  # noqa: S104

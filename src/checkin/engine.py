@@ -143,7 +143,7 @@ def build_response(
     step=1 : premiere reponse apres check-in
     step=2 : reponse apres question de suivi
     """
-    hour     = datetime.now().hour
+    hour     = datetime.now().hour  # noqa: DTZ005
     greeting = get_greeting(hour)
 
     # --- PRIORITE 1 : detection CRITICAL ---
@@ -154,7 +154,7 @@ def build_response(
         return {
             "level":      DistressLevel.CRITICAL,
             "score":      1.0,
-            "message":    random.choice(CRITICAL_RESPONSES),
+            "message":    random.choice(CRITICAL_RESPONSES),  # noqa: S311
             "tip":        None,
             "follow_up":  None,
             "resources":  RESOURCES_CRITICAL,
@@ -171,8 +171,8 @@ def build_response(
         return {
             "level":     level,
             "score":     score,
-            "message":   random.choice(GREEN_RESPONSES),
-            "tip":       random.choice(GREEN_TIPS),
+            "message":   random.choice(GREEN_RESPONSES),   # noqa: S311
+            "tip":       random.choice(GREEN_TIPS),         # noqa: S311
             "follow_up": None,
             "resources": [],
             "greeting":  greeting,
@@ -180,12 +180,12 @@ def build_response(
         }
 
     elif level == DistressLevel.YELLOW:
-        follow_up = random.choice(YELLOW_FOLLOWUP_QUESTIONS) if step == 1 else None
+        follow_up = random.choice(YELLOW_FOLLOWUP_QUESTIONS) if step == 1 else None  # noqa: S311
         return {
             "level":     level,
             "score":     score,
-            "message":   random.choice(YELLOW_RESPONSES),
-            "tip":       random.choice(YELLOW_TIPS),
+            "message":   random.choice(YELLOW_RESPONSES),   # noqa: S311
+            "tip":       random.choice(YELLOW_TIPS),         # noqa: S311
             "follow_up": follow_up,
             "resources": RESOURCES_YELLOW if step == 2 else [],
             "greeting":  greeting,
@@ -193,11 +193,11 @@ def build_response(
         }
 
     else:  # RED
-        follow_up = random.choice(RED_FOLLOWUP_QUESTIONS) if step == 1 else None
+        follow_up = random.choice(RED_FOLLOWUP_QUESTIONS) if step == 1 else None  # noqa: S311
         return {
             "level":     level,
             "score":     score,
-            "message":   random.choice(RED_RESPONSES),
+            "message":   random.choice(RED_RESPONSES),   # noqa: S311
             "tip":       None,
             "follow_up": follow_up,
             "resources": RESOURCES_RED,
@@ -207,7 +207,7 @@ def build_response(
 
 
 def compute_reminder(offset: str, mode: str) -> dict:
-    now = datetime.now()
+    now = datetime.now()  # noqa: DTZ005
     if offset == "1h":
         scheduled_at = now + timedelta(hours=1)
         label = f"aujourd'hui a {scheduled_at.strftime('%Hh%M')}"

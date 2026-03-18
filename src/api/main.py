@@ -126,7 +126,7 @@ def health_check():
     except Exception as e:
         # Erreur inattendue (corruption, OOM…) → 503
         logger.error(f"Health check — erreur modèle : {e}")
-        raise HTTPException(status_code=503, detail="Modèle indisponible — erreur inattendue.")
+        raise HTTPException(status_code=503, detail="Modèle indisponible — erreur inattendue.") from e
 
 
 @app.post("/explain", response_model=ExplainResponse)
@@ -140,10 +140,10 @@ def explain_endpoint(request: Request, request_body: ExplainRequest):
         return run_explain(request_body, model)
     except (FileNotFoundError, OSError) as e:
         logger.warning(f"Modèle indisponible (explain) : {e}")
-        raise HTTPException(status_code=503, detail="Modèle non disponible — entraînement requis.")
+        raise HTTPException(status_code=503, detail="Modèle non disponible — entraînement requis.") from e
     except Exception:
         logger.exception("Erreur explain")
-        raise HTTPException(status_code=500, detail="Erreur interne.")
+        raise HTTPException(status_code=500, detail="Erreur interne.") from None
 
 
 @app.post("/predict", response_model=PredictResponse)
@@ -156,7 +156,7 @@ def predict_endpoint(request: Request, body: PredictRequest):
         return run_prediction(body, model)
     except (FileNotFoundError, OSError) as e:
         logger.warning(f"Modèle indisponible : {e}")
-        raise HTTPException(status_code=503, detail="Modèle non disponible — entraînement requis.")
+        raise HTTPException(status_code=503, detail="Modèle non disponible — entraînement requis.") from e
     except Exception:
         logger.exception("Erreur prédiction")
-        raise HTTPException(status_code=500, detail="Erreur interne.")
+        raise HTTPException(status_code=500, detail="Erreur interne.") from None

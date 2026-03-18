@@ -36,12 +36,13 @@ src/
 
 ## Modèles
 
-| Modèle | Dataset | Accuracy | F1 Macro | Notes |
-|--------|---------|----------|----------|-------|
-| Baseline TF-IDF + LR | 388K | 88.9% | — | Référence prod |
-| DistilBERT v1 | DAIR-AI 16K | 96.8% | — | Fine-tuning initial |
-| **DistilBERT v2** | **388K combiné** | **89.0%** | **86.5%** | **Best epoch 2 / 3** |
-| DistilBERT v2.1 *(évalué)* | 388K + EarlyStop + class weights | — | 86.06% | eval_loss ↑ (overfit) — v2 reste champion |
+| Modèle | Dataset | Accuracy | F1 Macro | Sensitivité | Notes |
+|--------|---------|----------|----------|-------------|-------|
+| Baseline TF-IDF + LR | 388K | 88.9% | — | — | Référence prod slim |
+| DistilBERT v1 | DAIR-AI 16K | 96.8% | — | — | Fine-tuning initial |
+| **DistilBERT v2** | **388K combiné** | **89.0%** | **86.5%** | — | **Champion prod GPU** |
+| DistilBERT v2.1 *(évalué)* | 388K + EarlyStop | — | 86.06% | — | eval_loss ↑ — rejeté |
+| **Mental-BERT v3** ✨ | **Kaggle 100K + eRisk25 (clinique)** | **92.7%** | **92.5%** | **95.9%** | **AUC-ROC 98.2% · model_type=mental_bert_v3** |
 
 DistilBERT v2 — résultats Colab T4 GPU (3 epochs, batch=32) :
 
@@ -233,16 +234,39 @@ Améliorations v2.1 intégrées dans le notebook :
 | Medium | PYSEC-2022-252 deep-translator documenté (`.pip-audit-ignore`) | `requirements.txt` |
 | Low | SSRF : blocage RFC-1918 + loopback + link-local en production | `src/checkin/app.py` |
 
-### Posture actuelle — `ruff` ✅ · `pip-audit` ✅ (1 exception documentée) · 76/76 tests ✅
+### Revue 3 — Code review sécurité complète (2026-03-18)
+
+| Criticité | Bug/Finding | Correction | Fichier |
+|-----------|-------------|-----------|---------|
+| High | S1 — `emotion_id`/`distress_level` (RGPD Art.9) persistés sans auth | Non stockés dans le store mémoire | `src/api/checkin_router.py` |
+| Medium | B1 — `/checkin/reminder` sans rate limit | `@limiter.limit("10/minute")` ajouté | `src/api/checkin_router.py` |
+| Medium | B2 — Client Anthropic créé à chaque requête | Singleton `_get_anthropic_client()` | `src/api/analyze_router.py` |
+| Medium | B3/S3 — Rate limit inefficace derrière proxy | `_get_client_ip()` lit `X-Forwarded-For` | `src/api/rate_limit.py` |
+| Medium | S2 — CORS wildcard silencieux en prod mal configuré | Guard `env != production` + warning explicite | `src/api/main.py` |
+| Low | B4 — `_MODELS_DIR` dépend du CWD | Basé sur `__file__` (CWD-indépendant) | `src/training/predict.py` |
+| Low | B5 — `run_explain` crash hors vocabulaire | Guard `nonzero_idx.size == 0` | `src/api/services.py` |
+| Low | S4 — Injection prompt via évolution modèle | `_build_user_prompt` reçoit scalaires explicites | `src/api/analyze_router.py` |
+| Low | S6 — Fuite chemin interne dans logs | `logger.exception()` remplace `logger.error(f"...{e}")` | `src/api/main.py` |
+
+### Posture actuelle — `ruff` ✅ · `pip-audit` ✅ (1 exception documentée) · 117/117 tests ✅
 
 ---
 
 ## Tests & CI
 
 ```bash
-pytest tests/ -q --cov=src
+# Backend Python
+pytest tests/ -q --cov=src      # 117 tests : API, sécurité, moteur, entraînement
+
+# Frontend TypeScript
+cd frontend && npm run test      # 180 tests Vitest (scoringEngine, solutionEngine)
+npm run test:e2e                 # 18 tests Playwright (happy path, crisis flow)
+
+# Linting
 ruff check src/
 ```
+
+**Total : 180 Vitest + 18 Playwright + 117 pytest = 315 tests ✅**
 
 CI GitHub Actions sur push → branche Fabrice ✅
 
@@ -251,9 +275,26 @@ CI GitHub Actions sur push → branche Fabrice ✅
 ## Docker
 
 ```bash
+# Stack complète (API + Frontend + Dashboard)
 cd docker/
 docker-compose up --build
+
+# API seule avec Mental-BERT v3 (modèles montés en volume)
+docker build -f docker/Dockerfile.api -t mh-api-full:v3 .
+docker run -p 8000:8000 \
+  -v $(pwd)/models:/app/models \
+  mh-api-full:v3
 ```
+
+**Images disponibles :**
+
+| Image | Taille | Stack | Modèles |
+|-------|--------|-------|---------|
+| `Dockerfile.api.slim` | ~600 MB | baseline TF-IDF+LR | `baseline.joblib` baked in |
+| `Dockerfile.api` (`mh-api-full:v3`) | ~3.2 GB | PyTorch CPU-only + transformers | Volume mount requis |
+| `Dockerfile.frontend` | ~50 MB | nginx multi-stage | — |
+
+> **Note :** `models/fine_tuned/` et `models/fine_tuned_v3/` sont exclus du build context (`.dockerignore`) — montez-les avec `-v $(pwd)/models:/app/models`.
 
 ---
 

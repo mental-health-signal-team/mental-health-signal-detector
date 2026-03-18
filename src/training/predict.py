@@ -19,9 +19,24 @@ _MODELS_DIR = Path(__file__).resolve().parent.parent.parent / "models"
 
 
 def _safe_load_joblib(path: Path):
-    """Charge un fichier joblib uniquement s'il est dans le répertoire de confiance."""
+    """Load a joblib file only if it resolves inside the trusted models directory.
+
+    Prevents path-traversal attacks by refusing any path whose resolved form
+    falls outside ``_MODELS_DIR``.
+
+    Args:
+        path: Candidate file path to load.
+
+    Returns:
+        The deserialized Python object stored in the joblib file.
+
+    Raises:
+        ValueError: If the resolved path is outside the trusted models
+            directory.
+        FileNotFoundError: If the resolved path does not exist on disk.
+    """
     resolved = path.resolve()
-    if not str(resolved).startswith(str(_MODELS_DIR)):
+    if not resolved.is_relative_to(_MODELS_DIR.resolve()):
         raise ValueError(f"Chemin de modèle non autorisé : {resolved}")
     if not resolved.exists():
         raise FileNotFoundError(f"Fichier modèle introuvable : {resolved}")
@@ -29,6 +44,31 @@ def _safe_load_joblib(path: Path):
 
 
 def load_model(model_type: str = "baseline"):
+    """Load and return the requested model from disk.
+
+    Supported model types:
+
+    * ``"baseline"`` — sklearn ``Pipeline`` (TF-IDF + Logistic Regression)
+      loaded from ``models/baseline.joblib`` (falls back to
+      ``models/baseline.pkl``).
+    * ``"distilbert"`` — HuggingFace ``DistilBertForSequenceClassification``
+      loaded from the path configured in ``settings.model_path``.
+    * ``"mental_bert_v3"`` — HuggingFace ``BertForSequenceClassification``
+      loaded from the path configured in ``settings.model_path_v3``.
+
+    Args:
+        model_type: Identifier for the model to load.  Defaults to
+            ``"baseline"``.
+
+    Returns:
+        For ``"baseline"``: a fitted sklearn ``Pipeline`` object.
+        For transformer models: a dict with keys ``"tokenizer"`` and
+        ``"model"`` (the HuggingFace tokenizer and model set to eval mode).
+
+    Raises:
+        ValueError: If ``model_type`` is not one of the recognised identifiers.
+        FileNotFoundError: If the baseline model file cannot be found on disk.
+    """
     settings = get_settings()
     if model_type == "baseline":
         joblib_path = _MODELS_DIR / "baseline.joblib"
@@ -51,9 +91,36 @@ def load_model(model_type: str = "baseline"):
 
 
 def predict(text: str, model=None, model_type: str = "baseline") -> dict:
-    """
-    Prédit le score de risque pour un texte.
-    Retourne : {"label": 0|1, "score_distress": float, "model": str}
+    """Predict the mental-health distress risk score for the given text.
+
+    Applies language detection and text cleaning before inference.  If no
+    pre-loaded model is provided, the model is loaded from disk via
+    :func:`load_model`.
+
+    Args:
+        text: Raw input text in any supported language.
+        model: Optional pre-loaded model object.  When ``None`` the model is
+            loaded automatically using ``model_type``.  For ``"baseline"`` this
+            must be a fitted sklearn ``Pipeline``; for transformer models it
+            must be the dict returned by :func:`load_model`.
+        model_type: Identifier for the model to use when ``model`` is
+            ``None``.  One of ``"baseline"``, ``"distilbert"``, or
+            ``"mental_bert_v3"``.  Defaults to ``"baseline"``.
+
+    Returns:
+        A dict with the following keys:
+
+        * ``"label"`` (``int``): ``1`` if distress is detected, ``0``
+          otherwise.
+        * ``"score_distress"`` (``float``): Probability of the distress class
+          in ``[0.0, 1.0]``.
+        * ``"model"`` (``str``): The ``model_type`` identifier used.
+        * ``"detected_lang"`` (``str``): BCP-47 language code detected in the
+          input text (e.g. ``"en"``, ``"fr"``).
+
+    Raises:
+        ValueError: If ``model_type`` is unrecognised and no ``model`` is
+            provided (propagated from :func:`load_model`).
     """
     if model is None:
         model = load_model(model_type)

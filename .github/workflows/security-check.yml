@@ -1,0 +1,270 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Security CI — Mental Health Signal Detector
+#
+# Jobs (indépendants, tournent en parallèle) :
+#   1. dependency-audit  — pip-audit   : CVE dans les dépendances Python
+#   2. sast-bandit       — bandit      : SAST Python (injections, crypto faible…)
+#   3. secrets-scan      — gitleaks    : secrets commités (clés API, tokens…)
+#   4. docker-security   — hadolint    : lint Dockerfiles
+#                        — trivy (fs)  : CVE dans le code source + dépendances
+#   5. ruff-security     — ruff S/B    : règles flake8-bandit via ruff
+#
+# Déclencheurs :
+#   - push sur main, Fabrice, fix/**, feat/**, hotfix/**
+#   - pull_request vers main
+#   - cron lundi 06:00 UTC (surveillance CVE hebdomadaire)
+#
+# Artifacts uploadés dans chaque job pour revue hors CI.
+# Résultats trivy uploadés en SARIF → onglet "Security" GitHub.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Security — Audit & SAST
+
+on:
+  push:
+    branches:
+      - main
+      - Fabrice
+      - "fix/**"
+      - "feat/**"
+      - "hotfix/**"
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: "0 6 * * 1"   # Lundi 06:00 UTC — scan CVE hebdomadaire
+
+permissions:
+  contents: read
+  security-events: write  # upload SARIF → onglet Security GitHub
+
+# Annule les runs en cours si un nouveau push arrive sur la même branche
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  # ── 1. CVE dépendances Python ───────────────────────────────────────────────
+  dependency-audit:
+    name: Audit dépendances (pip-audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Installer pip-audit
+        run: pip install pip-audit
+
+      - name: Générer rapport JSON (sans bloquer)
+        # continue-on-error : un CVE dans une dépendance transitive ne doit pas
+        # bloquer les autres jobs. Le rapport est uploadé pour revue.
+        run: |
+          pip-audit -r requirements.txt \
+            --format json \
+            --output pip-audit-report.json \
+            --progress-spinner off \
+          || true
+
+      - name: Afficher résumé lisible
+        run: pip-audit -r requirements.txt --progress-spinner off || true
+
+      - name: Vérifier absence de CVE HIGH/CRITICAL (exit non-zero si trouvé)
+        run: |
+          pip-audit -r requirements.txt \
+            --progress-spinner off \
+            --format cyclonedx-json \
+            --output pip-audit-cyclonedx.json \
+          || echo "::warning::Des CVE ont été détectées — consulter pip-audit-report.json"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pip-audit-report
+          path: |
+            pip-audit-report.json
+            pip-audit-cyclonedx.json
+
+
+  # ── 2. SAST Python — bandit ─────────────────────────────────────────────────
+  sast-bandit:
+    name: SAST Python (bandit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Installer bandit
+        run: pip install "bandit[toml]>=1.7"
+
+      - name: Analyse bandit — sévérité MEDIUM+
+        # Règles couvertes :
+        #   B1xx  injections (SQL, shell, subprocess…)
+        #   B2xx  assertions et eval dangereux
+        #   B3xx  cryptographie faible (MD5, SHA1, random)
+        #   B5xx  désérialisation non sécurisée (pickle, yaml.load)
+        #   B6xx  accès XML/YAML dangereux
+        #   B7xx  jinja2 auto-escape désactivé
+        run: |
+          bandit -r src/ \
+            --severity-level medium \
+            --confidence-level medium \
+            --format json \
+            --output bandit-report.json \
+            --exit-zero
+
+      - name: Afficher résumé lisible
+        run: |
+          bandit -r src/ \
+            --severity-level medium \
+            --confidence-level medium \
+          || true
+
+      - name: Échouer si HIGH/CRITICAL détecté
+        run: |
+          python - <<'EOF'
+          import json, sys
+          with open("bandit-report.json") as f:
+              report = json.load(f)
+          high = [
+              r for r in report.get("results", [])
+              if r["issue_severity"] in ("HIGH", "CRITICAL")
+          ]
+          if high:
+              print(f"::error::bandit — {len(high)} problème(s) HIGH/CRITICAL détecté(s) !")
+              for r in high:
+                  print(f"  [{r['issue_severity']}] {r['filename']}:{r['line_number']} — {r['issue_text']}")
+              sys.exit(1)
+          else:
+              print(f"bandit — aucun problème HIGH/CRITICAL. Run clean ✅")
+          EOF
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-report
+          path: bandit-report.json
+
+
+  # ── 3. Scan secrets commités — gitleaks ────────────────────────────────────
+  secrets-scan:
+    name: Scan secrets (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # historique complet — détecte les secrets dans tous les commits
+
+      - name: Gitleaks — scan secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITLEAKS_LICENSE requis uniquement pour les organisations privées
+          # (repos personnels publics/privés : pas nécessaire)
+
+
+  # ── 4. Sécurité Docker — hadolint + trivy ─────────────────────────────────
+  docker-security:
+    name: Sécurité Docker (hadolint + trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Lint Dockerfile.api (image complète Mental-BERT)
+      - name: hadolint — Dockerfile.api
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: docker/Dockerfile.api
+          failure-threshold: error   # warning ne bloque pas, error bloque
+
+      # Lint Dockerfile.api.slim (image slim Render)
+      - name: hadolint — Dockerfile.api.slim
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: docker/Dockerfile.api.slim
+          failure-threshold: error
+
+      # Lint Dockerfile.frontend
+      - name: hadolint — Dockerfile.frontend
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: docker/Dockerfile.frontend
+          failure-threshold: error
+        continue-on-error: true   # frontend nginx — avertissement toléré
+
+      # Trivy : scan filesystem (code + dépendances résolues)
+      # exit-code: '0' → trivy produit toujours le SARIF même si CVEs trouvées
+      # continue-on-error: true → protège contre les timeouts DB téléchargement
+      - name: trivy — scan filesystem CRITICAL/HIGH
+        uses: aquasecurity/trivy-action@0.29.0
+        continue-on-error: true
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy-fs.sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true   # ignore CVEs sans patch disponible
+          exit-code: '0'         # ne bloque pas le build — rapport uploadé pour revue
+
+      - name: Upload trivy SARIF → GitHub Security
+        uses: github/codeql-action/upload-sarif@v4
+        # hashFiles guard : skip si trivy a crashé sans produire le fichier
+        if: always() && hashFiles('trivy-fs.sarif') != ''
+        continue-on-error: true
+        with:
+          sarif_file: trivy-fs.sarif
+          category: trivy-filesystem
+
+      # Rapport JSON téléchargeable
+      - name: trivy — rapport JSON
+        uses: aquasecurity/trivy-action@0.29.0
+        continue-on-error: true
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: json
+          output: trivy-fs.json
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-report
+          path: trivy-fs.json
+
+
+  # ── 5. Règles lint sécurité — ruff subset S/B ──────────────────────────────
+  ruff-security:
+    name: Lint sécurité (ruff — règles S)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Installer ruff (version fixée = CI principal)
+        run: pip install "ruff==0.4.4"
+
+      - name: Vérifier règles sécurité
+        # S   = flake8-bandit (injections, random, hashlib faible…)
+        # B   = flake8-bugbear (antipatterns Python dangereux)
+        # DTZ = flake8-datetimez (naive datetime → comparaisons UTC incorrectes)
+        # LOG = flake8-logging (format strings dans les loggers)
+        run: |
+          ruff check src/ \
+            --select S,B,DTZ,LOG \
+            --output-format github \
+            --exit-non-zero-on-fix

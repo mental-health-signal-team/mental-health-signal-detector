@@ -13,6 +13,18 @@ from src.api.schemas import (
 
 
 def run_prediction(request: PredictRequest, model) -> PredictResponse:
+    """Run a distress prediction for the given request using the provided model.
+
+    Args:
+        request: Incoming prediction request containing the text and desired
+            model type.
+        model: Pre-loaded model object (sklearn Pipeline or HuggingFace dict)
+            matching ``request.model_type``.
+
+    Returns:
+        A ``PredictResponse`` with the predicted label, distress score, model
+        identifier, text preview, and detected language.
+    """
     result = predict(request.text, model=model, model_type=request.model_type)
     return PredictResponse(
         label=result["label"],
@@ -24,7 +36,25 @@ def run_prediction(request: PredictRequest, model) -> PredictResponse:
 
 
 def run_explain(request: ExplainRequest, model) -> ExplainResponse:
-    """Calcule les contributions SHAP pour le baseline TF-IDF + LR."""
+    """Compute per-token feature contributions for the baseline TF-IDF + LR model.
+
+    Uses a linear approximation of SHAP values: ``tfidf(w) * coef_LR(w)`` for
+    each token present in the text.  This is valid for linear models but is not
+    a strict SHAP value (intercept and feature-coalition effects are ignored).
+    For strict SHAP values use ``shap.LinearExplainer`` as done in
+    ``src.training.evaluate.explain_with_shap``.
+
+    Args:
+        request: Explanation request containing the raw text and the maximum
+            number of top features to return (``n_features``).
+        model: A fitted sklearn ``Pipeline`` with a ``"tfidf"`` step
+            (``TfidfVectorizer``) and a ``"clf"`` step (``LogisticRegression``).
+
+    Returns:
+        An ``ExplainResponse`` with the predicted label, distress score,
+        detected language, and a ranked list of ``FeatureContribution`` objects
+        (word + signed SHAP-like value), capped at ``request.n_features``.
+    """
     text_en, detected_lang = prepare_text(request.text)
     text_clean = clean_text(text_en)
 
