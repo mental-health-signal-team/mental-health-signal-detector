@@ -201,8 +201,11 @@ jobs:
         continue-on-error: true   # frontend nginx — avertissement toléré
 
       # Trivy : scan filesystem (code + dépendances résolues)
+      # exit-code: '0' → trivy produit toujours le SARIF même si CVEs trouvées
+      # continue-on-error: true → protège contre les timeouts DB téléchargement
       - name: trivy — scan filesystem CRITICAL/HIGH
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.29.0
+        continue-on-error: true
         with:
           scan-type: fs
           scan-ref: .
@@ -210,6 +213,7 @@ jobs:
           output: trivy-fs.sarif
           severity: CRITICAL,HIGH
           ignore-unfixed: true   # ignore CVEs sans patch disponible
+          exit-code: '0'         # ne bloque pas le build — rapport uploadé pour revue
 
       - name: Upload trivy SARIF → GitHub Security
         uses: github/codeql-action/upload-sarif@v3
@@ -220,7 +224,8 @@ jobs:
 
       # Rapport JSON téléchargeable
       - name: trivy — rapport JSON
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.29.0
+        continue-on-error: true
         with:
           scan-type: fs
           scan-ref: .
