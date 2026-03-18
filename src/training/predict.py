@@ -1,6 +1,5 @@
-import pandas as pd
-
 from src.training.evaluate import LogisticRegression_fit
+
 
 def LogisticRegression_predict(X_train, y_train, X_to_predict):
     """Fit a Logistic Regression model and predict labels for new samples."""

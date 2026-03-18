@@ -7,6 +7,7 @@ from src.training.predict import (
 
 
 def test_logistic_regression_predict():
+    """Logistic regression predicts binary labels with expected shape."""
     X_train = np.array([[0.0], [1.0], [2.0], [3.0], [4.0], [5.0]])
     y_train = np.array([0, 0, 0, 1, 1, 1])
     X_to_predict = np.array([[0.5], [4.5]])
@@ -18,6 +19,7 @@ def test_logistic_regression_predict():
 
 
 def test_logistic_regression_predict_proba():
+    """Probability predictions are valid and normalized per sample."""
     X_train = np.array([[0.0], [1.0], [2.0], [3.0], [4.0], [5.0]])
     y_train = np.array([0, 0, 0, 1, 1, 1])
     X_to_predict = np.array([[0.5], [4.5]])
