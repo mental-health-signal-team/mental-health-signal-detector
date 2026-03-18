@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Heart, ArrowRight, Phone, ExternalLink, ChevronDown,
-  Sparkles, Shield, AlertTriangle, BookOpen, Wind, Users,
+  Sparkles, Shield, AlertTriangle, BookOpen, Wind, Users, HeartHandshake,
   Wind as BreathIcon, PenLine, MessageCircle, RotateCcw, Activity,
 } from "lucide-react";
 import { computeSolution } from "../lib/solutionEngine";
@@ -264,7 +264,10 @@ export default function Solutions() {
               : "bg-gradient-to-br from-teal-300 to-emerald-400"
             }`}>
               {solution.level >= 4 ? (
-                <AlertTriangle className="w-8 h-8 text-white" />
+                {mode === "kids"
+                  ? <HeartHandshake className="w-8 h-8 text-white" />
+                  : <Heart className="w-8 h-8 text-white" fill="white" />
+                }
               ) : solution.level >= 3 ? (
                 <Shield className="w-8 h-8 text-white" />
               ) : solution.level >= 2 ? (
