@@ -14,6 +14,7 @@ import {
   PROFILE_MESSAGES,
   PROFILE_CLOSINGS,
   PROFILE_ACTIONS,
+  RESOURCES,
   RESOURCES_BY_LEVEL,
   MICRO_ACTIONS,
 } from "../data/solutions";
@@ -153,6 +154,44 @@ function selectActions(profile: DiagnosticProfile, level: TriageLevel) {
   return [MICRO_ACTIONS.breathingCoherent, MICRO_ACTIONS.grounding54321];
 }
 
+// ─── Sélection contextuelle des ressources ───────────────────────────────────
+//
+// Enrichit la liste de base (niveau × mode) avec des ressources pertinentes
+// selon l'émotion choisie et les dimensions cliniques détectées.
+
+function selectResources(profile: DiagnosticProfile, level: TriageLevel) {
+  const { mode, emotionId, clinicalDimensions } = profile;
+  const base = [...RESOURCES_BY_LEVEL[level][mode]];
+
+  const ids = new Set(base.map((r) => r.id));
+  const add = (r: typeof RESOURCES[string]) => { if (!ids.has(r.id)) { base.push(r); ids.add(r.id); } };
+
+  if (mode === "adult" && level >= 2) {
+    // 3919 — contexte violence/danger : anger, fear, dysrégulation
+    if (
+      emotionId === "anger" ||
+      emotionId === "fear" ||
+      clinicalDimensions.includes("dysregulation")
+    ) {
+      add(RESOURCES.violencesFemmes);
+    }
+  }
+
+  if (mode === "kids" && level >= 2) {
+    // 119 — contexte danger physique : anger ou fear
+    if (emotionId === "anger" || emotionId === "fear") {
+      add(RESOURCES.enfanceEnDanger);
+    }
+    // 3018/3020 — contexte harcèlement : stress ou anger
+    if (emotionId === "stress" || emotionId === "anger") {
+      add(RESOURCES.antiHarcelement);
+      add(RESOURCES.harcelementScolaire);
+    }
+  }
+
+  return base;
+}
+
 // ─── Moteur principal ────────────────────────────────────────────────────────
 
 export function computeSolution(profile: DiagnosticProfile): SolutionResponse {
@@ -161,7 +200,7 @@ export function computeSolution(profile: DiagnosticProfile): SolutionResponse {
   const message = selectMessage(profile, level);
   const closing = selectClosing(profile, level);
   const microActions = selectActions(profile, level);
-  const resources = RESOURCES_BY_LEVEL[level][profile.mode];
+  const resources = selectResources(profile, level);
 
   return {
     level,

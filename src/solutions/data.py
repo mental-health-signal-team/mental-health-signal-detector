@@ -67,8 +67,8 @@ RESOURCES: dict[str, Resource] = {
     ),
     "enfanceEnDanger": Resource(
         id="119",
-        label="119 — Enfance en danger",
-        detail="Gratuit, confidentiel, 24h/24 — enfants, ados, jeunes majeurs",
+        label="119 — Allô Enfance en danger",
+        detail="Gratuit, confidentiel, 24h/24 — enfants, ados et jeunes majeurs en danger",
         type="phone",
         href="tel:119",
         urgent=True,
@@ -76,7 +76,7 @@ RESOURCES: dict[str, Resource] = {
     "antiHarcelement": Resource(
         id="3018",
         label="3018 — Cyberharcèlement",
-        detail="Gratuit, anonyme, 7j/7 · 9h–23h — harcèlement sur les réseaux",
+        detail="Gratuit, anonyme, confidentiel, 7j/7 · 9h–23h — réseaux sociaux et internet",
         type="phone",
         href="tel:3018",
     ),
@@ -86,6 +86,14 @@ RESOURCES: dict[str, Resource] = {
         detail="Gratuit, lun–ven · 9h–20h — harcèlement à l'école",
         type="phone",
         href="tel:3020",
+    ),
+    "violencesFemmes": Resource(
+        id="3919",
+        label="3919 — Arrêtons les violences",
+        detail="Gratuit, anonyme, 24h/24 — femmes victimes de violences",
+        type="phone",
+        href="tel:3919",
+        urgent=True,
     ),
 }
 
@@ -100,11 +108,11 @@ RESOURCES_BY_LEVEL: dict[int, dict[str, list[Resource]]] = {
     },
     3: {
         "kids": [RESOURCES["line3114"], RESOURCES["enfanceEnDanger"], RESOURCES["antiHarcelement"], RESOURCES["harcelementScolaire"], RESOURCES["procheEnfant"]],
-        "adult": [RESOURCES["medecinTraitant"], RESOURCES["line3114"], RESOURCES["monSoutienPsy"]],
+        "adult": [RESOURCES["medecinTraitant"], RESOURCES["line3114"], RESOURCES["violencesFemmes"], RESOURCES["monSoutienPsy"]],
     },
     4: {
         "kids": [RESOURCES["line3114"], RESOURCES["enfanceEnDanger"], RESOURCES["filSanteJeunes"], RESOURCES["procheEnfant"]],
-        "adult": [RESOURCES["line3114"], RESOURCES["samu"], RESOURCES["proche"]],
+        "adult": [RESOURCES["line3114"], RESOURCES["violencesFemmes"], RESOURCES["samu"], RESOURCES["proche"]],
     },
 }
 

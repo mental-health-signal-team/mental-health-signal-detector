@@ -14,6 +14,7 @@ from src.solutions.schemas import (
     TherapeuticBrick,
 )
 from src.solutions.data import (
+    RESOURCES,
     RESOURCES_BY_LEVEL,
     get_actions,
     get_closing,
@@ -67,13 +68,41 @@ def select_brick(clinical_profile: ClinicalProfile, level: int) -> TherapeuticBr
     return bricks.get(clinical_profile, "mindfulness")
 
 
+def select_resources(profile: DiagnosticProfileRequest, level: int) -> list:
+    """Enrichit la liste de base avec des ressources contextuelles (émotion + dimensions)."""
+    base = list(RESOURCES_BY_LEVEL[level][profile.mode])
+    seen = {r.id for r in base}
+
+    def add(key: str) -> None:
+        r = RESOURCES[key]
+        if r.id not in seen:
+            base.append(r)
+            seen.add(r.id)
+
+    if profile.mode == "adult" and level >= 2:
+        if (
+            profile.emotionId in ("anger", "fear")
+            or "dysregulation" in profile.clinicalDimensions
+        ):
+            add("violencesFemmes")
+
+    if profile.mode == "kids" and level >= 2:
+        if profile.emotionId in ("anger", "fear"):
+            add("enfanceEnDanger")
+        if profile.emotionId in ("stress", "anger"):
+            add("antiHarcelement")
+            add("harcelementScolaire")
+
+    return base
+
+
 def compute_solution(profile: DiagnosticProfileRequest) -> SolutionResponse:
     level = map_to_triage_level(profile)
     brick = select_brick(profile.clinicalProfile, level)
     message = get_message(profile.emotionId, level, profile.mode)
     closing = get_closing(profile.emotionId, level, profile.mode)
     micro_actions = get_actions(profile.clinicalProfile, level, profile.mode)
-    resources = RESOURCES_BY_LEVEL[level][profile.mode]
+    resources = select_resources(profile, level)
 
     return SolutionResponse(
         level=level,  # type: ignore[arg-type]
