@@ -76,6 +76,22 @@ export const RESOURCES: Record<string, Resource> = {
     type: "person",
     urgent: false,
   },
+  enfanceEnDanger: {
+    id: "119",
+    label: "119 — Enfance en danger",
+    detail: "Gratuit, confidentiel, 24h/24 — enfants, ados, jeunes majeurs",
+    type: "phone",
+    href: "tel:119",
+    urgent: true,
+  },
+  antiHarcelement: {
+    id: "3018",
+    label: "3018 — Stop harcèlement",
+    detail: "Gratuit, anonyme, 7j/7 · 9h–23h — harcèlement et cyberharcèlement",
+    type: "phone",
+    href: "tel:3018",
+    urgent: false,
+  },
 };
 
 // ─── MICRO-ACTIONS ────────────────────────────────────────────────────────────
@@ -547,16 +563,16 @@ export const RESOURCES_BY_LEVEL: Record<number, { kids: Resource[]; adult: Resou
   0: { kids: [], adult: [] },
   1: { kids: [], adult: [] },
   2: {
-    kids: [RESOURCES.procheEnfant, RESOURCES.filSanteJeunes],
+    kids: [RESOURCES.procheEnfant, RESOURCES.antiHarcelement, RESOURCES.filSanteJeunes],
     adult: [RESOURCES.proche, RESOURCES.monSoutienPsy, RESOURCES.psycom],
   },
   3: {
-    // 3114 inclus au niveau 3 — disponible pour appels non-urgents, prévention active
-    kids: [RESOURCES.line3114, RESOURCES.procheEnfant, RESOURCES.filSanteJeunes],
+    // 3114 + 119 inclus au niveau 3 — prévention active, danger potentiel
+    kids: [RESOURCES.line3114, RESOURCES.enfanceEnDanger, RESOURCES.antiHarcelement, RESOURCES.procheEnfant],
     adult: [RESOURCES.medecinTraitant, RESOURCES.line3114, RESOURCES.monSoutienPsy],
   },
   4: {
-    kids: [RESOURCES.line3114, RESOURCES.filSanteJeunes, RESOURCES.procheEnfant],
+    kids: [RESOURCES.line3114, RESOURCES.enfanceEnDanger, RESOURCES.filSanteJeunes, RESOURCES.procheEnfant],
     adult: [RESOURCES.line3114, RESOURCES.samu, RESOURCES.proche],
   },
 };
