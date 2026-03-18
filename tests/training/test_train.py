@@ -47,3 +47,23 @@ def test_predict_proba_text(sample_df):
     assert "score_distress" in result
     assert 0.0 <= result["score_distress"] <= 1.0
     assert result["label"] in (0, 1)
+
+
+def test_evaluate_baseline_clinical_metrics(sample_df):
+    """Vérifie que les métriques de sécurité clinique sont retournées."""
+    from src.training.evaluate import evaluate_baseline
+
+    pipeline = train_baseline(sample_df)
+    metrics = evaluate_baseline(pipeline, sample_df)
+
+    # Métriques standard
+    assert "accuracy" in metrics
+    assert "f1_macro" in metrics
+    # Métriques de sécurité clinique v3
+    assert "recall_1" in metrics      # sensitivité
+    assert "recall_0" in metrics      # spécificité
+    assert "auc_roc" in metrics
+    assert "brier_score" in metrics
+
+    for key, val in metrics.items():
+        assert 0.0 <= val <= 1.0, f"{key}={val} hors [0,1]"

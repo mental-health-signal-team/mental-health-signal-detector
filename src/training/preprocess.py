@@ -227,10 +227,15 @@ def build_dataset(
 
     Priorité des sources :
       1. Kaggle reddit depression (vrai Reddit, 2.47M posts)
-      2. DAIR-AI/emotion (diversité stylistique)
-      3. GoEmotions (Reddit, labels fins, qualité Google)
-      4. eRisk25 (CLEF 2025 — labels cliniques dépression, qualité maximale)
-      5. SMHD (si accès obtenu — 9 troubles mentaux)
+      2. DAIR-AI/emotion (diversité stylistique — émotions générales, non cliniques)
+      3. GoEmotions (Reddit, labels fins, qualité Google — non cliniques)
+      4. eRisk25 (CLEF 2025 — labels cliniques dépression, qualité maximale) ★
+      5. SMHD (si accès obtenu — 9 troubles mentaux, labels cliniques) ★
+
+    Mode recommandé pour la production clinique : use_dair=False, use_go_emotions=False
+    → Seules les sources avec labels cliniques validés (eRisk25, Kaggle depression).
+    DAIR-AI et GoEmotions sont des datasets d'émotions générales qui peuvent biaiser
+    la représentation apprise vers des signaux non-cliniques.
     """
     from sklearn.model_selection import train_test_split
 
