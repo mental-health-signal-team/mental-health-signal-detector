@@ -216,8 +216,10 @@ jobs:
           exit-code: '0'         # ne bloque pas le build — rapport uploadé pour revue
 
       - name: Upload trivy SARIF → GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        # hashFiles guard : skip si trivy a crashé sans produire le fichier
+        if: always() && hashFiles('trivy-fs.sarif') != ''
+        continue-on-error: true
         with:
           sarif_file: trivy-fs.sarif
           category: trivy-filesystem
