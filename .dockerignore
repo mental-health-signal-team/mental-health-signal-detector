@@ -9,3 +9,7 @@ __pycache__/
 .mypy_cache/
 logs/
 *.zip
+# Modèles lourds exclus du build context (montés en volume via docker-compose)
+models/fine_tuned/
+models/fine_tuned_v3/
+models/baseline.pkl
