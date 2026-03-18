@@ -54,9 +54,30 @@ const DIM_LABEL: Record<ClinicalDimension, string> = {
 
 // ─── Sous-composants ─────────────────────────────────────────────────────────
 
-function ActionCard({ action, index }: { action: MicroAction; index: number }) {
-  const [expanded, setExpanded] = useState(false);
+// ─── Feedback local actions ───────────────────────────────────────────────────
+
+type FeedbackValue = "helpful" | "not_helpful";
+
+function saveActionFeedback(actionId: string, helpful: boolean): void {
+  try {
+    const raw = localStorage.getItem("mh_action_feedback");
+    const all: { actionId: string; helpful: boolean; date: string }[] = raw ? JSON.parse(raw) : [];
+    all.push({ actionId, helpful, date: new Date().toISOString() });
+    localStorage.setItem("mh_action_feedback", JSON.stringify(all.slice(-50)));
+  } catch {
+    // localStorage indisponible → silencieux
+  }
+}
+
+function ActionCard({ action, index, mode }: { action: MicroAction; index: number; mode: "kids" | "adult" }) {
+  const [expanded, setExpanded]   = useState(false);
+  const [feedback, setFeedback]   = useState<FeedbackValue | null>(null);
   const Icon = BRICK_ICON[action.brick];
+
+  const handleFeedback = (value: FeedbackValue) => {
+    setFeedback(value);
+    saveActionFeedback(action.id, value === "helpful");
+  };
 
   return (
     <motion.div
@@ -90,9 +111,42 @@ function ActionCard({ action, index }: { action: MicroAction; index: number }) {
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <p className="px-4 pb-4 text-sm text-gray-600 leading-relaxed border-t border-gray-100 pt-3">
+            <p className="px-4 pb-3 text-sm text-gray-600 leading-relaxed border-t border-gray-100 pt-3">
               {action.description}
             </p>
+
+            {/* Feedback discret */}
+            <div className="px-4 pb-4">
+              {feedback === null ? (
+                <div className="flex items-center gap-3 pt-1">
+                  <span className="text-xs text-gray-400">
+                    {mode === "kids" ? "Ça t'a aidé ?" : "Est-ce que ça vous a aidé ?"}
+                  </span>
+                  <button
+                    onClick={() => handleFeedback("helpful")}
+                    className="text-xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"
+                  >
+                    {mode === "kids" ? "👍 Oui !" : "Oui"}
+                  </button>
+                  <button
+                    onClick={() => handleFeedback("not_helpful")}
+                    className="text-xs px-2.5 py-1 rounded-full bg-gray-50 text-gray-500 hover:bg-gray-100 transition-colors"
+                  >
+                    {mode === "kids" ? "😐 Pas vraiment" : "Pas vraiment"}
+                  </button>
+                </div>
+              ) : (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-xs text-gray-400 pt-1"
+                >
+                  {feedback === "helpful"
+                    ? (mode === "kids" ? "Super, content que ça t'ait aidé 💙" : "Merci pour votre retour.")
+                    : (mode === "kids" ? "Noté. On essaiera autre chose la prochaine fois." : "Noté. D'autres pistes vous attendent.")}
+                </motion.p>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -521,7 +575,7 @@ export default function Solutions() {
               {mode === "kids" ? "Ce que tu peux faire maintenant" : "Actions concrètes"}
             </motion.p>
             {solution.microActions.map((action, i) => (
-              <ActionCard key={action.id} action={action} index={i} />
+              <ActionCard key={action.id} action={action} index={i} mode={mode} />
             ))}
           </div>
         )}
