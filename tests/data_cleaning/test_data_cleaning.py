@@ -74,6 +74,4 @@ def test_balance_classes():
     )
     balanced_df = balance_classes(df, label_col="label")
     # On regarde si les labels sont équilibrés
-    assert (
-        balanced_df["label"].value_counts()[0] == balanced_df["label"].value_counts()[1]
-    )
+    assert balanced_df["label"].value_counts()[0] == balanced_df["label"].value_counts()[1]
