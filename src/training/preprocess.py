@@ -124,6 +124,15 @@ def _normalize_text(text: str) -> str:
     return text
 
 
+def _tokenize_text(text: str) -> list[str]:
+    """Tokenize text using NLTK when available, with a regex fallback for CI/minimal environments."""
+    try:
+        return word_tokenize(text)
+    except LookupError:
+        # Keep words plus key punctuation tokens expected by downstream preprocessing.
+        return re.findall(r"[A-Za-z0-9_]+|[!?.]", text)
+
+
 def preprocess_text(
     text,
     remove_stopwords=True,
@@ -147,7 +156,7 @@ def preprocess_text(
     if normalize:
         text = _normalize_text(text)
 
-    tokens = word_tokenize(text)
+    tokens = _tokenize_text(text)
     tokens = [t.lower() for t in tokens]
 
     if remove_punctuation:
