@@ -1,15 +1,34 @@
-from src.training.evaluate import LogisticRegression_fit
+import torch
+from transformers import AutoTokenizer
+
+from src.training.preprocess import preprocess_text
 
 
-def LogisticRegression_predict(X_train, y_train, X_to_predict):
-    """Fit a Logistic Regression model and predict labels for new samples."""
-    log_reg = LogisticRegression_fit(X_train, y_train)
-    y_pred = log_reg.predict(X_to_predict)
-    return y_pred
+def lr_predict(model, vectorizer, text: str, preprocess_fn=preprocess_text) -> dict:
+    """Predict class label/probability with a trained logistic regression pipeline."""
+    preprocessed_text = preprocess_fn(text)
+    features = vectorizer.transform([preprocessed_text])
+    probability = model.predict_proba(features)[0][1]
+    return {"label": int(probability >= 0.5), "probability": probability}
 
 
-def LogisticRegression_predict_proba(X_train, y_train, X_to_predict):
-    """Fit a Logistic Regression model and predict class probabilities."""
-    log_reg = LogisticRegression_fit(X_train, y_train)
-    y_pred_proba = log_reg.predict_proba(X_to_predict)
-    return y_pred_proba
+def distilbert_predict(model, text: str, tokenizer=None, preprocess_fn=preprocess_text) -> dict:
+    """Predict class label/probability with a trained DistilBERT classifier."""
+    preprocessed_text = preprocess_fn(text)
+    if tokenizer is None:
+        tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+
+    inputs = tokenizer(
+        preprocessed_text,
+        return_tensors="pt",
+        truncation=True,
+        padding=True,
+        max_length=512,
+    )
+    model.eval()
+    with torch.no_grad():
+        outputs = model(**inputs)
+        logits = outputs.logits
+        probabilities = torch.softmax(logits, dim=-1)
+        probability = probabilities[0][1].item()
+    return {"label": int(probability >= 0.5), "probability": probability}

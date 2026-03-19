@@ -1,28 +1,48 @@
 import numpy as np
-from sklearn.linear_model import LogisticRegression
+import pandas as pd
 
-from src.training.evaluate import LogisticRegression_fit, accuracy
-
-
-def test_LogisticRegression_fit():
-    """Test the LogisticRegression_fit function by checking if it returns a fitted model"""
-    X_train = np.array([[0.0], [1.0], [2.0], [3.0], [4.0], [5.0]])
-    y_train = np.array([0, 0, 0, 1, 1, 1])
-
-    model = LogisticRegression_fit(X_train, y_train)
-
-    assert isinstance(model, LogisticRegression)
-    assert model.class_weight == "balanced"
-    assert set(model.classes_) == {0, 1}
+from src.training.evaluate import evaluate
 
 
-def test_accuracy():
-    """Test the accuracy function by checking if it returns a score between 0 and 1"""
-    X_train = np.array([[0.0], [1.0], [2.0], [3.0], [4.0], [5.0]])
-    y_train = np.array([0, 0, 0, 1, 1, 1])
+class DummyVectorizer:
+    def __init__(self):
+        self.seen = None
 
-    model = LogisticRegression_fit(X_train, y_train)
-    score = accuracy(model, X_train, y_train)
+    def transform(self, X_test):
+        self.seen = list(X_test)
+        return np.array([[0.0], [1.0], [2.0], [3.0]])
 
-    assert isinstance(score, float)
-    assert 0.0 <= score <= 1.0
+
+class DummyModel:
+    def __init__(self):
+        self.seen = None
+
+    def predict(self, X_test):
+        self.seen = X_test
+        return np.array([1, 0, 1, 0])
+
+
+def test_evaluate():
+    """evaluate returns metric keys and valid metric values."""
+    model = DummyModel()
+    vectorizer = DummyVectorizer()
+    X_test = pd.Series(["a", "b", "c", "d"])
+    y_test = np.array([1, 0, 1, 0])
+
+    metrics = evaluate(model, vectorizer, X_test, y_test)
+
+    assert set(metrics) == {
+        "accuracy",
+        "precision",
+        "recall",
+        "f1_score",
+        "classification_report",
+    }
+    assert metrics["accuracy"] == 1.0
+    assert metrics["precision"] == 1.0
+    assert metrics["recall"] == 1.0
+    assert metrics["f1_score"] == 1.0
+    assert isinstance(metrics["classification_report"], str)
+    assert "precision" in metrics["classification_report"]
+    assert vectorizer.seen == ["a", "b", "c", "d"]
+    assert model.seen.shape == (4, 1)

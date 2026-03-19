@@ -76,66 +76,28 @@ gradebbook.db
 
 # Django stuff:
 *.log
-local_settings.py
+logs/
+tmp/
+temp/
 
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
-
-# Sphinx documentation
-docs/_build/
-
-# PyBuilder
-target/
-
-# Jupyter Notebook
-**/.ipynb_checkpoints
-
-# pyenv
-.python-version
-
-# celery beat schedule file
-celerybeat-schedule
-
-# SageMath parsed files
-*.sage.py
-
-# dotenv
+# Local environment and secrets
 .env
+.env.*
+!.env.example
+kaggle.json
+.config/kaggle/kaggle.json
 
-# exclude virtual envs
-.venv
-venv/
-ENV/
-*venv*
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
-.mypy_cache/
-
-# Big datasets
+# Data and artifacts
 data/
-yolov5/
-mlartifacts/
-mlruns/
+data/raw/
+data/processed/
+data/external/
+models/
+artifacts/
 
-# Intellij
-.idea/
+# Streamlit
+.streamlit/secrets.toml
 
-# AutoPush
-Automate
 # Docker
 docker/.env
 

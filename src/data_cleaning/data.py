@@ -3,6 +3,8 @@ from pathlib import Path
 import kagglehub
 import pandas as pd
 
+import src.common.config as config
+
 DATA_FILENAME = "reddit_depression_dataset.csv"
 
 
@@ -51,7 +53,7 @@ def download_data() -> None:
 
 def load_data() -> pd.DataFrame:
     """Load the dataset from the CSV file."""
-    df = pd.read_csv(_get_project_data_dir() / DATA_FILENAME)
+    df = pd.read_csv(config.DATA_DIR / DATA_FILENAME)
     return df
 
 
@@ -71,6 +73,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     mask = (~unnamed_is_numeric) & title_is_numeric
 
     # 3) Inversion des valeurs entre les 2 colonnes sur ces lignes
+    df.loc[mask, ["Unnamed: 0", "title"]] = df.loc[mask, ["title", "Unnamed: 0"]].to_numpy()
     df.loc[mask, ["Unnamed: 0", "title"]] = df.loc[mask, ["title", "Unnamed: 0"]].to_numpy()
     # On drop les colonnes qui ne sont pas utiles
     # On va fusionner les colonnes de texte body et title

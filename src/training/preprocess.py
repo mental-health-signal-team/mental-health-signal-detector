@@ -67,33 +67,7 @@ def _wordnet_pos(treebank_tag: str) -> str:
     return "n"
 
 
-def preprocess_text(text, remove_stopwords=True, remove_punctuation=True, lemmatize=True):
-    """
-    Preprocess the input text by
-    normalizing, tokenizing, removing stop words and punctuation and lemmatizing.
-    The function can be configured to enable/disable each step.
-    """
-    tokens = word_tokenize(text)
-    tokens = [t.lower() for t in tokens]
-
-    if remove_punctuation:
-        tokens = [t for t in tokens if t in {"!", "?"} or re.fullmatch(r"[a-z0-9_]+", t)]
-
-    if remove_stopwords:
-        stop_words = _get_stop_words()
-        tokens = [t for t in tokens if t not in stop_words]
-
-    if lemmatize:
-        try:
-            pos_tags = nltk.pos_tag(tokens)
-        except LookupError:
-            pos_tags = [(t, "N") for t in tokens]
-        tokens = [_LEMMATIZER.lemmatize(t, _wordnet_pos(pos)) for t, pos in pos_tags]
-
-    return " ".join(tokens)
-
-
-def clean_text(text: str) -> str:
+def _normalize_text(text: str) -> str:
     """
     Clean and normalize the input text by:
     - Decoding HTML entities
@@ -148,3 +122,46 @@ def clean_text(text: str) -> str:
     text = re.sub(r"(.)\1{2,}", r"\1\1", text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
+
+
+def preprocess_text(
+    text,
+    remove_stopwords=True,
+    remove_punctuation=True,
+    lemmatize=True,
+    model_type="lr",
+    normalize=True,
+):
+    """
+    End-to-end preprocessing pipeline.
+    By default, this function now handles both normalization (old clean_text)
+    and linguistic preprocessing (tokenization, filtering, lemmatization).
+    """
+    del model_type  # kept for backward compatibility with existing callers
+
+    if text is None:
+        text = ""
+    elif not isinstance(text, str):
+        text = str(text)
+
+    if normalize:
+        text = _normalize_text(text)
+
+    tokens = word_tokenize(text)
+    tokens = [t.lower() for t in tokens]
+
+    if remove_punctuation:
+        tokens = [t for t in tokens if t in {"!", "?"} or re.fullmatch(r"[a-z0-9_]+", t)]
+
+    if remove_stopwords:
+        stop_words = _get_stop_words()
+        tokens = [t for t in tokens if t not in stop_words]
+
+    if lemmatize:
+        try:
+            pos_tags = nltk.pos_tag(tokens)
+        except LookupError:
+            pos_tags = [(t, "N") for t in tokens]
+        tokens = [_LEMMATIZER.lemmatize(t, _wordnet_pos(pos)) for t, pos in pos_tags]
+
+    return " ".join(tokens)
