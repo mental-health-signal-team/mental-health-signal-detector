@@ -11,7 +11,7 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.11,<3.15"
 dependencies = [
-    "pandas (>=3.0.1,<4.0.0)",
+    "pandas (>=1.4.0,<4.0.0)",
     "datasets (>=4.7.0,<5.0.0)",
     "kagglehub (>=1.0.0,<2.0.0)",
     "kaggle (>=2.0.0,<3.0.0)",
@@ -23,7 +23,10 @@ dependencies = [
     "torch (>=2.10.0,<3.0.0)",
     "basemodel (>=20190604.1625,<20190605.0)",
     "uvicorn (>=0.42.0,<0.43.0)",
-    "fastapi (>=0.135.1,<0.136.0)"
+    "fastapi (>=0.135.1,<0.136.0)",
+    "streamlit (>=1.40.0)",
+    "dotenv (>=0.9.9,<0.10.0)",
+    "python-dotenv (>=1.2.2,<2.0.0)"
 ]
 
 
