@@ -1,4 +1,4 @@
-from src.training.preprocess import preprocess_text, _normalize_text
+from src.training.preprocess import _normalize_text, preprocess_text
 
 
 def test_normalize_text():
@@ -13,7 +13,6 @@ def test_normalize_text():
 
     cleaned = _normalize_text(text)
 
-    # Underscores are removed by punctuation filtering, so tokens become compact.
     assert "urltoken" in cleaned
     assert "usertoken" in cleaned
     assert "subreddittoken" in cleaned
@@ -69,4 +68,4 @@ def test_preprocess_text():
     assert cleaned2 == "i am at home ."
 
     cleaned3 = preprocess_text(text3, remove_stopwords=False, remove_punctuation=True, lemmatize=False)
-    assert cleaned3 == "see url_token"
+    assert cleaned3 == "see urltoken"

@@ -1,5 +1,4 @@
 import joblib
-
 import pandas as pd
 
 from src.training import train as train_module
