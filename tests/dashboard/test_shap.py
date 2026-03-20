@@ -1,8 +1,9 @@
 """Tests unitaires pour les fonctions SHAP du dashboard."""
 
 import sys
+from unittest.mock import MagicMock, Mock
+
 import numpy as np
-from unittest.mock import Mock, MagicMock
 
 
 def test_shap_values():
@@ -11,7 +12,7 @@ def test_shap_values():
     mock_shap_values = Mock()
     explainer_instance = Mock(return_value=mock_shap_values)
     mock_shap.Explainer.return_value = explainer_instance
-    
+
     original_shap = sys.modules.get("shap")
     sys.modules["shap"] = mock_shap
     try:
@@ -39,7 +40,7 @@ def test_shap_graph():
     mock_shap_values.__getitem__.return_value = Mock()
     explainer_instance = Mock(return_value=mock_shap_values)
     mock_shap.Explainer.return_value = explainer_instance
-    
+
     mock_plt = MagicMock()
     mock_matplotlib = MagicMock()
     mock_matplotlib.pyplot = mock_plt
