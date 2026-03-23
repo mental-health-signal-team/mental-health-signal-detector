@@ -1,6 +1,8 @@
 import requests
 import streamlit as st
 
+from src.dashboard.examples import render_examples
+
 
 def _render_hero(mode: str) -> None:
     """Render page hero with a visual style matching the project poster."""
@@ -41,6 +43,7 @@ def render_risk_message(risk_level: str) -> None:
 def render_prediction_page(api_url: str) -> None:
     """Render the default text prediction page."""
     _render_hero("prediction")
+    render_examples(session_key="predict_text")
     st.markdown('<p class="section-title">Input text</p>', unsafe_allow_html=True)
 
     text_input = st.text_area("Input Text", height=200, key="predict_text")
