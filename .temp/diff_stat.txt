@@ -1,0 +1,69 @@
+ .dockerignore                             |   11 +
+ .env.example                              |   24 +
+ .github/workflows/ci.yml                  |   40 +
+ README.md                                 |  515 ++-
+ configs/api.yaml                          |   14 +
+ configs/dashboard.yaml                    |    4 +
+ configs/train.yaml                        |   20 +
+ docker/Dockerfile.api                     |   32 +
+ docker/Dockerfile.dashboard               |   23 +
+ docker/docker-compose.yml                 |   32 +
+ frontend/.gitignore                       |   24 +
+ frontend/README.md                        |   73 +
+ frontend/eslint.config.js                 |   23 +
+ frontend/index.html                       |   13 +
+ frontend/package-lock.json                | 5293 +++++++++++++++++++++++++++++
+ frontend/package.json                     |   50 +
+ frontend/postcss.config.mjs               |    1 +
+ frontend/public/favicon.svg               |    1 +
+ frontend/public/icons.svg                 |   24 +
+ frontend/src/App.css                      |  184 +
+ frontend/src/App.tsx                      |   14 +
+ frontend/src/assets/hero.png              |  Bin 0 -> 44919 bytes
+ frontend/src/assets/react.svg             |    1 +
+ frontend/src/assets/vite.svg              |    1 +
+ frontend/src/index.css                    |    1 +
+ frontend/src/lib/utils.ts                 |    6 +
+ frontend/src/main.tsx                     |   10 +
+ frontend/src/pages/CheckIn.tsx            |  192 ++
+ frontend/src/pages/Home.tsx               |   77 +
+ frontend/tsconfig.app.json                |   28 +
+ frontend/tsconfig.json                    |    7 +
+ frontend/tsconfig.node.json               |   26 +
+ frontend/vite.config.ts                   |   25 +
+ notebooks/distilbert_finetune_colab.ipynb |  190 ++
+ pytest.ini                                |    4 +
+ reports/confusion_matrix_baseline.png     |  Bin 0 -> 19927 bytes
+ requirements-dev.txt                      |    9 +
+ requirements.txt                          |   38 +
+ scripts/run_api.sh                        |    6 +
+ scripts/run_dashboard.sh                  |    5 +
+ scripts/run_train.sh                      |   15 +
+ src/api/checkin_router.py                 |   51 +
+ src/api/dependencies.py                   |   15 +
+ src/api/main.py                           |   87 +
+ src/api/schemas.py                        |   42 +
+ src/api/services.py                       |   62 +
+ src/checkin/__init__.py                   |    0
+ src/checkin/app.py                        |  310 ++
+ src/checkin/content.py                    |  156 +
+ src/checkin/engine.py                     |  150 +
+ src/checkin/schemas.py                    |   25 +
+ src/common/config.py                      |   27 +
+ src/common/language.py                    |   68 +
+ src/common/logging.py                     |   24 +
+ src/dashboard/app.py                      |  135 +
+ src/data_cleaning/data.py                 |   59 +
+ src/training/evaluate.py                  |  112 +
+ src/training/predict.py                   |   69 +
+ src/training/preprocess.py                |  201 ++
+ src/training/train.py                     |  169 +
+ tests/__init__.py                         |    0
+ tests/api/__init__.py                     |    0
+ tests/api/test_checkin.py                 |   78 +
+ tests/api/test_health.py                  |   33 +
+ tests/checkin/__init__.py                 |    0
+ tests/checkin/test_engine.py              |  102 +
+ tests/training/__init__.py                |    0
+ tests/training/test_train.py              |   49 +
+ 68 files changed, 9078 insertions(+), 2 deletions(-)

@@ -1,0 +1,11 @@
+  Stan
+  Thomas
+  aimen
+* fabrice
+  main
+  remotes/origin/Fabrice
+  remotes/origin/HEAD -> origin/main
+  remotes/origin/Stan
+  remotes/origin/Thomas
+  remotes/origin/aimen
+  remotes/origin/main

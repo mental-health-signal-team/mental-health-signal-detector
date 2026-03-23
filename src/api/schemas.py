@@ -15,3 +15,25 @@ class PredictionResponse(BaseModel):
 
     label: int
     probability: float
+
+
+class ExplainRequest(BaseModel):
+    """Request model for explanation endpoint."""
+
+    text: str
+    model_type: Literal["lr", "distilbert"] = "lr"
+    threshold: float = 0.005
+    max_tokens: int = 40
+
+
+class ExplainResponse(BaseModel):
+    """Response model for explanation endpoint."""
+
+    label: int
+    probability: float
+    display_confidence: float
+    confidence_label: Literal["distress", "no_distress"]
+    risk_level: Literal["low", "medium", "high"]
+    colored_html: str
+    word_importance: dict[str, float]
+    note: str | None = None

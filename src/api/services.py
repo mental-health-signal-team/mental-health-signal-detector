@@ -1,5 +1,8 @@
+import html
 import io
 import pickle
+import re
+from typing import Any, Mapping
 
 import joblib
 import torch
@@ -7,11 +10,13 @@ from transformers import AutoModelForSequenceClassification
 
 import src.common.config as config
 import src.training.predict as predictor
+from src.training.preprocess import preprocess_text
 
 _lr_model = joblib.load(config.LR_MODEL_PATH)
 _lr_vectorizer = joblib.load(config.VECTORIZER_PATH)
 _distilbert_model = None  # Lazy load the DistilBERT model when needed
 _mental_roberta_model = None  # Lazy load the Mental Roberta model when needed
+_predictor_module = None
 
 
 class CPUUnpickler(pickle.Unpickler):
@@ -51,3 +56,97 @@ def predict(text: str, model_type: str = "lr") -> dict:
         return predictor.distilbert_predict(_get_distilbert_model(), text)
     elif model_type == "mental_roberta":
         return predictor.mental_roberta_predict(_get_mental_roberta_model(), text)
+
+
+def color_text_full(
+    text: str,
+    word_importance: Mapping[str, float],
+    vectorizer: Any,
+    threshold: float = 0.005,
+) -> str:
+    """Color words using SHAP importance values from a fitted vectorizer."""
+    analyzer = vectorizer.build_analyzer()
+
+    words = re.findall(r"\w+|\W+", text)
+    colored_words = []
+
+    for word in words:
+        clean_tokens = analyzer(word)
+
+        if clean_tokens:
+            token = clean_tokens[0]
+            importance = float(word_importance.get(token, 0.0))
+        else:
+            importance = 0.0
+
+        if importance > threshold:
+            color = "red"
+        elif importance < -threshold:
+            color = "green"
+        else:
+            color = "white"
+
+        safe_word = html.escape(word)
+        colored_word = f'<span style="color:{color}">{safe_word}</span>'
+        colored_words.append(colored_word)
+
+    return "".join(colored_words)
+
+
+def _risk_level(probability: float) -> str:
+    """Convert depression probability into categorical risk level."""
+    if probability < 0.33:
+        return "low"
+    if probability < 0.66:
+        return "medium"
+    return "high"
+
+
+def _lr_word_importance(text: str) -> dict[str, float]:
+    """Compute local LR contributions for tokens present in input text."""
+    preprocessed_text = preprocess_text(text)
+    features = _lr_vectorizer.transform([preprocessed_text])
+    coeffs = _lr_model.coef_[0]
+    feature_names = _lr_vectorizer.get_feature_names_out()
+    contribution_vector = features.multiply(coeffs).tocsr()
+
+    return {feature_names[idx]: float(value) for idx, value in zip(contribution_vector.indices, contribution_vector.data)}
+
+
+def explain(text: str, model_type: str = "lr", threshold: float = 0.005, max_tokens: int = 40) -> dict:
+    """Predict and return a colorized token-importance explanation payload."""
+    if threshold < 0:
+        raise ValueError("threshold must be >= 0.")
+    if max_tokens <= 0:
+        raise ValueError("max_tokens must be > 0.")
+
+    prediction = predict(text, model_type)
+    label = int(prediction["label"])
+    probability = float(prediction["probability"])
+
+    if label == 1:
+        display_confidence = probability
+        confidence_label = "distress"
+    else:
+        display_confidence = 1.0 - probability
+        confidence_label = "no_distress"
+
+    note = None
+    if model_type == "lr":
+        word_importance = _lr_word_importance(text)
+        vectorizer = _lr_vectorizer
+    else:
+        raise ValueError("Unsupported model_type. Use 'lr' for now")
+
+    colored_html = color_text_full(text, word_importance, vectorizer, threshold=threshold)
+
+    return {
+        "label": label,
+        "probability": probability,
+        "display_confidence": display_confidence,
+        "confidence_label": confidence_label,
+        "risk_level": _risk_level(probability),
+        "colored_html": colored_html,
+        "word_importance": word_importance,
+        "note": note,
+    }

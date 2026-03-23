@@ -1,0 +1,23 @@
+8afb44a (Stan) edit stan notebook
+c3d1f4b (origin/Stan) add streamlit dashboard
+ecc842b add API and docker
+2d8b1a6 balancing length of lines
+2b4c670 change kaggle import logic
+5cdf34a change dependencies install in github workflow
+644c46c add docstring verification
+e92f2dd fix small errors
+05eeee9 allow no tests
+bbb6f3e update ci logic to exclude ipynb and make tests
+71baa1f add precommit and ci configuration
+f9b7823 exploration and cleaning all datasets
+eafcbeb (origin/Thomas, Thomas) Re commit pour cleaning et tests
+58ed870 Merge branch 'Thomas' of github.com:stanislav-grinchenko/mental-health-signal-detector into Thomas Pull avant de pusher
+df47f06 Cleaning et tests correspondants done
+d2d8ccf Création de fichiers tests
+b5abf21 merge cleaning functionality into stan
+061be89 cleaning of emotions datasets
+2d1589b (main) Rename sgo.ipynb to thomas.ipynb
+7e2db58 Merge pull request #1 from stanislav-grinchenko/Thomas
+191da71 Merge branch 'main' into Thomas
+4dd1286 Création des fonctions automatisées de cleanage de data
+3d73ef5 add script download emotion dataset

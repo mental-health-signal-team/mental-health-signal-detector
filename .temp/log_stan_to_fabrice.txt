@@ -1,0 +1,7 @@
+cdeade2 (HEAD -> fabrice, origin/Fabrice) refactor: aligne frontend sur le stack exact Figma Make
+d280075 feat: frontend React — Mental Wellness Companion App
+7c198ca fix: corrige les 3 tests checkin + ruff data_cleaning
+93755ee fix: corrige les 4 erreurs ruff (F401/F841)
+de592bc fix: adresse les 14 points de la review Copilot PR #2
+ecdd18c fix: add matplotlib dependency and guard optional import for CI
+b5fc032 feat: Phase 1 + Phase 2 — NLP pipeline, API sécurisée, dashboard SHAP, app check-in
