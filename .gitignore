@@ -42,6 +42,7 @@ wheels/
 .venv/
 venv/
 .env/
+.python-version
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
