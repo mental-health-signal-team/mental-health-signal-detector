@@ -32,10 +32,7 @@ def health_check():
 @app.post("/predict")
 def predict(request: PredictionRequest) -> PredictionResponse:
     """Endpoint to predict mental health signals from input text."""
-    try:
-        result = services.predict(request.text, request.model_type)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    result = services.predict(request.text, request.model_type)
     return PredictionResponse(**result)
 
 

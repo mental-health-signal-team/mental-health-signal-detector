@@ -6,6 +6,7 @@ from typing import Any, Mapping
 
 import joblib
 import torch
+from transformers import AutoTokenizer
 
 import src.common.config as config
 import src.training.predict as predictor
@@ -14,6 +15,7 @@ from src.training.preprocess import preprocess_text
 _lr_model = joblib.load(config.LR_MODEL_PATH)
 _lr_vectorizer = joblib.load(config.VECTORIZER_PATH)
 _distilbert_model = None  # Lazy load the DistilBERT model when needed
+_distilbert_tokenizer = None
 _predictor_module = None
 
 
@@ -34,6 +36,14 @@ def _get_distilbert_model():
         with open(config.DISTILBERT_MODEL_PATH, "rb") as f:
             _distilbert_model = CPUUnpickler(f).load()
     return _distilbert_model
+
+
+def _get_distilbert_tokenizer():
+    """Load DistilBERT tokenizer lazily and return it."""
+    global _distilbert_tokenizer
+    if _distilbert_tokenizer is None:
+        _distilbert_tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+    return _distilbert_tokenizer
 
 
 def predict(text: str, model_type: str = "lr") -> dict:
@@ -100,6 +110,99 @@ def _lr_word_importance(text: str) -> dict[str, float]:
     return {feature_names[idx]: float(value) for idx, value in zip(contribution_vector.indices, contribution_vector.data)}
 
 
+def _distilbert_word_importance(text: str, max_tokens: int = 40) -> dict[str, float]:
+    """Compute token importance for DistilBERT with gradient x input attribution."""
+    model = _get_distilbert_model()
+    tokenizer = _get_distilbert_tokenizer()
+    preprocessed_text = preprocess_text(text)
+
+    encoded = tokenizer(
+        preprocessed_text,
+        return_tensors="pt",
+        truncation=True,
+        max_length=512,
+    )
+    input_ids = encoded["input_ids"]
+    attention_mask = encoded.get("attention_mask")
+
+    embedding_layer = model.get_input_embeddings()
+    inputs_embeds = embedding_layer(input_ids).detach()
+    inputs_embeds.requires_grad_(True)
+
+    model.zero_grad()
+    outputs = model(inputs_embeds=inputs_embeds, attention_mask=attention_mask)
+    logits = outputs.logits
+    predicted_class = int(torch.argmax(logits, dim=-1).item())
+    target_logit = logits[0, predicted_class]
+    target_logit.backward()
+
+    grads = inputs_embeds.grad[0]
+    token_scores = (grads * inputs_embeds[0]).sum(dim=-1).detach().cpu().tolist()
+    tokens = tokenizer.convert_ids_to_tokens(input_ids[0])
+    special_tokens = set(tokenizer.all_special_tokens)
+
+    merged: dict[str, float] = {}
+    current_word = ""
+    current_score = 0.0
+
+    for token, score in zip(tokens, token_scores):
+        if token in special_tokens:
+            if current_word:
+                key = current_word.lower()
+                merged[key] = merged.get(key, 0.0) + float(current_score)
+                current_word = ""
+                current_score = 0.0
+            continue
+
+        if token.startswith("##"):
+            piece = token[2:]
+            current_word += piece
+            current_score += float(score)
+            continue
+
+        if current_word:
+            key = current_word.lower()
+            merged[key] = merged.get(key, 0.0) + float(current_score)
+
+        current_word = token
+        current_score = float(score)
+
+    if current_word:
+        key = current_word.lower()
+        merged[key] = merged.get(key, 0.0) + float(current_score)
+
+    if len(merged) > max_tokens:
+        top_items = sorted(merged.items(), key=lambda item: abs(float(item[1])), reverse=True)[:max_tokens]
+        return dict(top_items)
+    return merged
+
+
+def _color_text_distilbert(
+    text: str,
+    word_importance: Mapping[str, float],
+    threshold: float = 0.005,
+) -> str:
+    """Color text for DistilBERT explanation using lowercased word matching."""
+    words = re.findall(r"\w+|\W+", text)
+    colored_words = []
+
+    for word in words:
+        key = word.lower()
+        importance = float(word_importance.get(key, 0.0)) if key.isalnum() else 0.0
+
+        if importance > threshold:
+            color = "red"
+        elif importance < -threshold:
+            color = "green"
+        else:
+            color = "white"
+
+        safe_word = html.escape(word)
+        colored_words.append(f'<span style="color:{color}">{safe_word}</span>')
+
+    return "".join(colored_words)
+
+
 def explain(text: str, model_type: str = "lr", threshold: float = 0.005, max_tokens: int = 40) -> dict:
     """Predict and return a colorized token-importance explanation payload."""
     if threshold < 0:
@@ -122,10 +225,13 @@ def explain(text: str, model_type: str = "lr", threshold: float = 0.005, max_tok
     if model_type == "lr":
         word_importance = _lr_word_importance(text)
         vectorizer = _lr_vectorizer
+        colored_html = color_text_full(text, word_importance, vectorizer, threshold=threshold)
+    elif model_type == "distilbert":
+        word_importance = _distilbert_word_importance(text, max_tokens=max_tokens)
+        colored_html = _color_text_distilbert(text, word_importance, threshold=threshold)
+        note = "DistilBERT importance is gradient-based and can vary slightly between runs and tokenization."  # noqa: E501
     else:
-        raise ValueError("Unsupported model_type. Use 'lr' for now")
-
-    colored_html = color_text_full(text, word_importance, vectorizer, threshold=threshold)
+        raise ValueError("Unsupported model_type. Use 'lr' or 'distilbert'.")
 
     return {
         "label": label,

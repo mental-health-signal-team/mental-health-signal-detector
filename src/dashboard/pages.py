@@ -2,6 +2,32 @@ import requests
 import streamlit as st
 
 
+def _render_hero(mode: str) -> None:
+    """Render page hero with a visual style matching the project poster."""
+    if mode == "prediction":
+        subtitle = "Détection de signaux de detresse mentale par NLP."
+    else:
+        subtitle = "Explorez les mots qui influencent la prediction pour mieux expliquer chaque resultat au niveau token."
+
+    st.markdown(
+        """
+        <div class="hero-banner">PROJET FINAL • BOOTCAMP DATA SCIENCE • ARTEFACT SCHOOL OF DATA</div>
+        <h1 class="hero-title">Mental Health<br/>Signal Detector</h1>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(f"<p class='hero-subtitle'>{subtitle}</p>", unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class="chip-row">
+            <div class="chip">Logistic Regression · XGBoost · DistilBERT · MentalBERT</div>
+            <div class="chip">FastAPI · Streamlit</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def render_risk_message(risk_level: str) -> None:
     """Render categorical risk level with color-coded Streamlit message."""
     if risk_level == "low":
@@ -14,10 +40,11 @@ def render_risk_message(risk_level: str) -> None:
 
 def render_prediction_page(api_url: str) -> None:
     """Render the default text prediction page."""
-    st.title("Mental Health Signal Detector")
-    st.write("Enter text to analyze for mental health signals.")
+    _render_hero("prediction")
+    st.markdown('<p class="section-title">Input text</p>', unsafe_allow_html=True)
 
     text_input = st.text_area("Input Text", height=200, key="predict_text")
+    st.markdown('<p class="section-title">Model selection</p>', unsafe_allow_html=True)
     model_type = st.selectbox("Select Model", ["lr", "distilbert"], key="predict_model")
 
     if st.button("Predict", key="predict_button"):
@@ -62,23 +89,25 @@ def render_prediction_page(api_url: str) -> None:
 
 def render_word_importance_page(api_url: str) -> None:
     """Render the explainability page backed by the deployed API."""
-    st.title("Word Importance Details")
-    st.write("Predict and highlight token importance inside the typed sentence.")
+    _render_hero("explain")
+    st.markdown('<p class="section-title">Explainability sentence</p>', unsafe_allow_html=True)
 
     text_input = st.text_area("Sentence", height=180, key="explain_sentence")
-    model_type = "lr"
-    st.caption("Word-level explanation currently supports the LR model.")
+    st.markdown('<p class="section-title">Model selection</p>', unsafe_allow_html=True)
+    model_type = st.selectbox("Explain with model", ["lr", "distilbert"], key="explain_model")
+    st.caption("Choose LR for sparse token contributions or DistilBERT for gradient-based token attributions.")
+    st.markdown('<p class="section-title">Sensitivity</p>', unsafe_allow_html=True)
     threshold = st.slider(
-        "Color threshold",
+        "Word importance threshold",
         min_value=0.0,
-        max_value=0.05,
+        max_value=0.1,
         value=0.005,
         step=0.001,
         key="explain_threshold",
     )
     max_tokens = 40
 
-    if st.button("Predict with details", key="predict_with_details"):
+    if st.button("Show word importance", key="predict_with_details"):
         if not text_input.strip():
             st.warning("Please enter a sentence to analyze.")
             return
@@ -90,7 +119,7 @@ def render_word_importance_page(api_url: str) -> None:
             "max_tokens": max_tokens,
         }
 
-        with st.spinner("Generating prediction and explanation..."):
+        with st.spinner("Analyzing token contributions..."):
             try:
                 response = requests.post(f"{api_url}/explain", json=payload, timeout=180)
                 if not response.ok:
@@ -100,22 +129,6 @@ def render_word_importance_page(api_url: str) -> None:
             except requests.exceptions.RequestException as exc:
                 st.error(f"Error while requesting explanation: {exc}")
                 return
-
-        label = int(result["label"])
-        confidence = float(result["display_confidence"])
-        confidence_label = str(result["confidence_label"])
-        if label == 1:
-            st.error("Distress signal detected")
-        else:
-            st.success("No distress signal detected")
-
-        st.metric(f"Confidence ({confidence_label.replace('_', ' ')})", f"{confidence:.0%}")
-        st.progress(confidence)
-
-        render_risk_message(str(result["risk_level"]))
-        note = result.get("note")
-        if note:
-            st.info(str(note))
 
         st.markdown("### Highlighted sentence")
         st.markdown(
