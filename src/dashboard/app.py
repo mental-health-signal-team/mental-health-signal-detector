@@ -1,34 +1,36 @@
 import os
+import sys
+from pathlib import Path
 
-import requests
 import streamlit as st
 from dotenv import load_dotenv
 
+try:
+    from src.dashboard.pages import render_prediction_page, render_word_importance_page
+except ModuleNotFoundError:
+    # Streamlit can run with a cwd that does not include project root in sys.path.
+    project_root = Path(__file__).resolve().parents[2]
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+    from src.dashboard.pages import render_prediction_page, render_word_importance_page
+
 load_dotenv()
 API_URL = os.getenv("API_URL", "http://localhost:8000")
-st.title("Mental Health Signal Detector")
-st.write("Enter text to analyze for mental health signals.")
-text_input = st.text_area("Input Text", height=200)
-model_type = st.selectbox("Select Model", ["lr", "distilbert"])
-if st.button("Predict"):
-    if not text_input.strip():
-        st.warning("Please enter some text to analyze.")
+API_URL_LOCAL = os.getenv("API_URL_LOCAL", "http://localhost:8000")
+
+def main() -> None:
+    st.sidebar.title("Navigation")
+    selected_page = st.sidebar.radio(
+        "Go to",
+        ["Prediction", "Word Importance"],
+        index=0,
+    )
+
+    if selected_page == "Prediction":
+        render_prediction_page(API_URL_LOCAL)
     else:
-        with st.spinner("Analyzing... (first request may take up to 30s to wake the server)"):
-            try:
-                response = requests.post(
-                    f"{API_URL}/predict",
-                    json={"text": text_input, "model_type": model_type},
-                    timeout=60,
-                )
-                response.raise_for_status()
-                result = response.json()
-                label = result["label"]
-                probability = result["probability"]
-                label_text = "Distress signal detected" if label == 1 else "No distress signal detected"
-                color = st.error if label == 1 else st.success
-                color(label_text)
-                st.metric("Confidence", f"{probability:.0%}")
-                st.progress(probability)
-            except requests.exceptions.RequestException as e:
-                st.error(f"Error: {e}")
+        render_word_importance_page(API_URL_LOCAL)
+
+
+if __name__ == "__main__":
+    main()
