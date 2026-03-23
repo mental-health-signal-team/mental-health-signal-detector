@@ -18,7 +18,7 @@ def render_prediction_page(api_url: str) -> None:
     st.write("Enter text to analyze for mental health signals.")
 
     text_input = st.text_area("Input Text", height=200, key="predict_text")
-    model_type = st.selectbox("Select Model", ["lr", "distilbert", "mental_roberta"], key="predict_model")
+    model_type = st.selectbox("Select Model", ["lr", "distilbert", "mental_roberta", "xgboost"], key="predict_model")
 
     if st.button("Predict", key="predict_button"):
         if not text_input.strip():

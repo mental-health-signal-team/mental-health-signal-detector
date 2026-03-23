@@ -87,13 +87,21 @@ temp/
 kaggle.json
 .config/kaggle/kaggle.json
 
+# exclude virtual envs
+.venv
+venv/
+ENV/
+*venv*
+
 # Data and artifacts
 data/
 data/raw/
 data/processed/
 data/external/
 models/
-artifacts
+
+artifacts/
+
 
 # Streamlitt
 .streamlit/secrets.toml

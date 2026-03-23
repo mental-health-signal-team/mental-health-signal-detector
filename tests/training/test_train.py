@@ -65,3 +65,35 @@ def test_save_artifacts(tmp_path):
     assert model_path.exists()
     assert joblib.load(vectorizer_path) == vectorizer_obj
     assert joblib.load(model_path) == model_obj
+
+
+def test_train_xgboost_model_uses_notebook_style_settings():
+    """train_xgboost_model fits TF-IDF + model using notebook-like pipeline."""
+
+    class DummyModel:
+        def __init__(self):
+            self.fit_called = False
+            self.fit_args = None
+
+        def fit(self, X, y):
+            self.fit_called = True
+            self.fit_args = (X, y)
+            return self
+
+    model_instance = DummyModel()
+    X_train = pd.Series(["this is okay"] * 6 + ["really bad mood"] * 6)
+    y_train = pd.Series([0] * 6 + [1] * 6)
+
+    vectorizer, model = train_module.train_xgboost_model(
+        X_train,
+        y_train,
+        model_factory=lambda: model_instance,
+    )
+
+    assert model is model_instance
+    assert model.fit_called is True
+    assert model.fit_args[0].shape[0] == len(X_train)
+    assert model.fit_args[1].equals(y_train)
+    assert vectorizer.max_features == 10000
+    assert vectorizer.ngram_range == (1, 2)
+    assert vectorizer.stop_words == "english"

@@ -45,6 +45,39 @@ def train_model(X_train, y_train) -> tuple:
     return vectorizer, model
 
 
+def train_xgboost_model(X_train, y_train, model_factory=None) -> tuple:
+    """Train an XGBoost model using the same setup as the exploratory notebook.
+    - Uses TF-IDF with 10k features, unigrams+bigrams and English stop-words.
+    - Uses tuned XGBoost hyperparameters from notebooks/aimen/aimen_XGBoost.ipynb.
+    - Optional model_factory is provided for lightweight tests without importing xgboost.
+    """
+    vectorizer = TfidfVectorizer(max_features=10000, ngram_range=(1, 2), stop_words="english")
+    X_train_tfidf = vectorizer.fit_transform(X_train)
+
+    if model_factory is None:
+        try:
+            from xgboost import XGBClassifier
+        except ImportError as exc:
+            raise ImportError("xgboost is required to train the XGBoost model. Install it with `pip install xgboost`.") from exc
+
+        model = XGBClassifier(
+            n_estimators=300,
+            max_depth=8,
+            learning_rate=0.05,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            scale_pos_weight=4.2,
+            random_state=42,
+            eval_metric="logloss",
+            n_jobs=-1,
+        )
+    else:
+        model = model_factory()
+
+    model.fit(X_train_tfidf, y_train)
+    return vectorizer, model
+
+
 def save_artifacts(vectorizer, model, models_dir=None, vectorizer_path=None, model_path=None):
     """Save the trained model and vectorizer to disk using joblib.
     Optional paths make the function easy to test without monkeypatching."""
@@ -63,5 +96,13 @@ def save_artifacts(vectorizer, model, models_dir=None, vectorizer_path=None, mod
 
 if __name__ == "__main__":
     X_train, y_train, X_val, y_val, X_test, y_test = load_and_prepare_data()
-    vectorizer, model = train_model(X_train, y_train)
-    save_artifacts(vectorizer, model)
+    lr_vectorizer, lr_model = train_model(X_train, y_train)
+    save_artifacts(lr_vectorizer, lr_model)
+
+    xgb_vectorizer, xgb_model = train_xgboost_model(X_train, y_train)
+    save_artifacts(
+        xgb_vectorizer,
+        xgb_model,
+        vectorizer_path=config.XGBOOST_VECTORIZER_PATH,
+        model_path=config.XGBOOST_MODEL_PATH,
+    )
