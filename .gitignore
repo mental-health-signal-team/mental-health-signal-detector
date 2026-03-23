@@ -93,9 +93,9 @@ data/raw/
 data/processed/
 data/external/
 models/
-artifacts/
+artifacts
 
-# Streamlit
+# Streamlitt
 .streamlit/secrets.toml
 
 # Docker
@@ -103,3 +103,10 @@ docker/.env
 
 .claude/
 .kaggle/
+
+# Ignore temporary files
+.tmp/
+.temp/
+
+.python-version
+notebooks/Thomas.ipynb
