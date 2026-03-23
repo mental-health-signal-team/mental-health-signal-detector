@@ -10,6 +10,19 @@ app = FastAPI(
 )
 
 
+@app.get("/")
+def root():
+    """Root endpoint with quick API usage hints."""
+    return {
+        "message": "Mental Health Signal Detector API",
+        "endpoints": {
+            "health": "/health",
+            "predict": "POST /predict",
+            "explain": "POST /explain",
+        },
+    }
+
+
 @app.get("/health")
 def health_check():
     """Health check endpoint to verify that the API is running."""
@@ -19,7 +32,10 @@ def health_check():
 @app.post("/predict")
 def predict(request: PredictionRequest) -> PredictionResponse:
     """Endpoint to predict mental health signals from input text."""
-    result = services.predict(request.text, request.model_type)
+    try:
+        result = services.predict(request.text, request.model_type)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return PredictionResponse(**result)
 
 

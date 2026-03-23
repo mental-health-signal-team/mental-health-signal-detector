@@ -66,7 +66,8 @@ def render_word_importance_page(api_url: str) -> None:
     st.write("Predict and highlight token importance inside the typed sentence.")
 
     text_input = st.text_area("Sentence", height=180, key="explain_sentence")
-    model_type = st.selectbox("Model", ["lr", "distilbert"], key="explain_model")
+    model_type = "lr"
+    st.caption("Word-level explanation currently supports the LR model.")
     threshold = st.slider(
         "Color threshold",
         min_value=0.0,
@@ -75,14 +76,7 @@ def render_word_importance_page(api_url: str) -> None:
         step=0.001,
         key="explain_threshold",
     )
-    max_tokens = st.slider(
-        "Max words to explain (DistilBERT)",
-        min_value=10,
-        max_value=120,
-        value=40,
-        step=5,
-        key="explain_max_tokens",
-    )
+    max_tokens = 40
 
     if st.button("Predict with details", key="predict_with_details"):
         if not text_input.strip():
@@ -99,7 +93,9 @@ def render_word_importance_page(api_url: str) -> None:
         with st.spinner("Generating prediction and explanation..."):
             try:
                 response = requests.post(f"{api_url}/explain", json=payload, timeout=180)
-                response.raise_for_status()
+                if not response.ok:
+                    st.error(f"Error while requesting explanation: {response.text or f'HTTP {response.status_code}'}")
+                    return
                 result = response.json()
             except requests.exceptions.RequestException as exc:
                 st.error(f"Error while requesting explanation: {exc}")
@@ -125,9 +121,9 @@ def render_word_importance_page(api_url: str) -> None:
         st.markdown(
             (
                 "<p><b>Legend:</b> "
-                '<span style="color:green">green</span> positive, '
-                '<span style="color:red">red</span> negative, '
-                '<span style="color:white;background:#111;padding:0 4px;">white</span> neutral</p>'
+                '<span style="color:green">green</span> Positive words, '
+                '<span style="color:red">red</span> Negative words, '
+                '<span style="color:white;background:#111;padding:0 4px;">white</span> Neutral words</p>'
             ),
             unsafe_allow_html=True,
         )
@@ -146,4 +142,3 @@ def render_word_importance_page(api_url: str) -> None:
             top_items = sorted(word_importance.items(), key=lambda item: abs(float(item[1])), reverse=True)[:10]
             st.markdown("### Top influential words")
             st.table([{"word": token, "importance": round(float(value), 4)} for token, value in top_items])
-

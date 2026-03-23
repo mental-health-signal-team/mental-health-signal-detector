@@ -1,11 +1,11 @@
 import html
-import torch
 import io
 import pickle
 import re
 from typing import Any, Mapping
 
 import joblib
+import torch
 
 import src.common.config as config
 import src.training.predict as predictor
@@ -67,9 +67,9 @@ def color_text_full(
             importance = 0.0
 
         if importance > threshold:
-            color = "green"
-        elif importance < -threshold:
             color = "red"
+        elif importance < -threshold:
+            color = "green"
         else:
             color = "white"
 
@@ -95,7 +95,7 @@ def _lr_word_importance(text: str) -> dict[str, float]:
     features = _lr_vectorizer.transform([preprocessed_text])
     coeffs = _lr_model.coef_[0]
     feature_names = _lr_vectorizer.get_feature_names_out()
-    contribution_vector = features.multiply(coeffs)
+    contribution_vector = features.multiply(coeffs).tocsr()
 
     return {feature_names[idx]: float(value) for idx, value in zip(contribution_vector.indices, contribution_vector.data)}
 
