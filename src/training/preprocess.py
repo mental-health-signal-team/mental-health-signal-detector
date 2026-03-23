@@ -6,6 +6,7 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 
 _NEGATION_WORDS = {"no", "not", "nor", "never", "n't"}
 _STOP_WORDS = None
@@ -44,7 +45,11 @@ def _get_stop_words() -> set:
     """
     global _STOP_WORDS
     if _STOP_WORDS is None:
-        _STOP_WORDS = set(stopwords.words("english")) - _NEGATION_WORDS
+        try:
+            _STOP_WORDS = set(stopwords.words("english")) - _NEGATION_WORDS
+        except LookupError:
+            # Container/runtime environments may not ship NLTK corpora.
+            _STOP_WORDS = set(ENGLISH_STOP_WORDS) - _NEGATION_WORDS
     return _STOP_WORDS
 
 
@@ -171,6 +176,12 @@ def preprocess_text(
             pos_tags = nltk.pos_tag(tokens)
         except LookupError:
             pos_tags = [(t, "N") for t in tokens]
-        tokens = [_LEMMATIZER.lemmatize(t, _wordnet_pos(pos)) for t, pos in pos_tags]
+        lemmatized_tokens = []
+        for token, pos in pos_tags:
+            try:
+                lemmatized_tokens.append(_LEMMATIZER.lemmatize(token, _wordnet_pos(pos)))
+            except LookupError:
+                lemmatized_tokens.append(token)
+        tokens = lemmatized_tokens
 
     return " ".join(tokens)

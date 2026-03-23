@@ -6,3 +6,14 @@ services:
     ports:
       - "8000:8000"
     command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000
+
+  dashboard:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://api:8000
+    depends_on:
+      - api
