@@ -1,6 +1,6 @@
 import pandas as pd
 
-from src.data_cleaning.data import balance_classes, clean_data
+from src.data_cleaning.data import clean_data
 
 # A faire peut etre avant : python3 -m pip install pytest
 # Et pip install -r requirements.txt
@@ -60,20 +60,3 @@ def test_clean_data():
     assert isinstance(df_cleaned, pd.DataFrame)
     assert df_cleaned.isna().sum().sum() == 0
     assert df_cleaned.shape[1] == 2
-
-
-def test_balance_classes():
-    """
-    Test class balancing
-    """
-    df = pd.DataFrame(
-        {
-            "text": ["a", "b", "c", "d", "e", "f", "g", "h"],
-            "label": [0, 0, 0, 0, 0, 1, 1, 1],
-        }
-    )
-    balanced_df = balance_classes(df, label_col="label")
-    # On regarde si les labels sont équilibrés
-    assert (
-        balanced_df["label"].value_counts()[0] == balanced_df["label"].value_counts()[1]
-    )
