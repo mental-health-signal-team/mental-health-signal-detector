@@ -17,6 +17,15 @@ def health_check():
     return {"status": "healthy"}
 
 
+@app.get("/diagnostics/roberta")
+def roberta_diagnostics(load_model: bool = False):
+    """Report which RoBERTa backend is active: local files or pickle."""
+    try:
+        return services.get_roberta_diagnostics(load_model=load_model)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"RoBERTa diagnostics failed: {exc}") from exc
+
+
 @app.post("/predict")
 def predict(request: PredictionRequest) -> PredictionResponse:
     """Endpoint to predict mental health signals from input text."""

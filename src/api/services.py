@@ -1,8 +1,10 @@
 import io
 import pickle
+from pathlib import Path
 
 import joblib
 import torch
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 import src.common.config as config
 import src.training.predict as predictor
@@ -11,8 +13,28 @@ _lr_model = joblib.load(config.LR_MODEL_PATH)
 _lr_vectorizer = joblib.load(config.VECTORIZER_PATH)
 _distilbert_model = None  # Lazy load the DistilBERT model when needed
 _roberta_model = None
+_roberta_backend = "not_loaded"
+_roberta_last_error = None
 _xgboost_model = None
 _xgboost_vectorizer = None
+
+
+def _roberta_local_files_status() -> dict:
+    """Return status of expected local Hugging Face RoBERTa files."""
+    local_dir = Path(config.ROBERTA_LOCAL_DIR)
+    required = {
+        "config.json": (local_dir / "config.json").exists(),
+        "tokenizer_config.json": (local_dir / "tokenizer_config.json").exists(),
+        "tokenizer.json": (local_dir / "tokenizer.json").exists(),
+    }
+    has_weights = (local_dir / "model.safetensors").exists() or (local_dir / "pytorch_model.bin").exists()
+    return {
+        "directory": str(local_dir),
+        "directory_exists": local_dir.is_dir(),
+        "required_files": required,
+        "has_weights": has_weights,
+        "ready": local_dir.is_dir() and all(required.values()) and has_weights,
+    }
 
 
 def _load_artifact(path, prefer_torch: bool = False):
@@ -63,9 +85,29 @@ class CPUUnpickler(pickle.Unpickler):
             return lambda f, *a, **kw: torch.load(f, map_location="cpu", weights_only=False)
         try:
             return super().find_class(module, name)
-        except AttributeError as exc:
+        except AttributeError:
+            # Backward/forward compatibility for Transformers class renames.
+            if module == "transformers.models.roberta.modeling_roberta" and "Sdpa" in name:
+                alias = name.replace("Sdpa", "")
+                try:
+                    roberta_mod = __import__(module, fromlist=[alias])
+                    return getattr(roberta_mod, alias)
+                except Exception:  # noqa: BLE001
+                    pass
+
             if "roberta" in module.lower() or "sdpa" in name.lower():
-                return type(name, (object,), {})
+                class _CompatMissingModule(torch.nn.Module):
+                    def __init__(self, *args, **kwargs):
+                        super().__init__()
+
+                    def forward(self, *args, **kwargs):
+                        raise RuntimeError(
+                            f"Missing transformer class during unpickling: {module}.{name}. "
+                            "Use a compatible transformers version for this artifact."
+                        )
+
+                _CompatMissingModule.__name__ = name
+                return _CompatMissingModule
             raise
 
 
@@ -79,10 +121,49 @@ def _get_distilbert_model():
 
 def _get_roberta_model():
     """Load the RoBERTa model from disk if it hasn't been loaded yet, and return it."""
-    global _roberta_model
+    global _roberta_model, _roberta_backend, _roberta_last_error
     if _roberta_model is None:
-        _roberta_model = _load_artifact(config.ROBERTA_MODEL_PATH)
+        status = _roberta_local_files_status()
+        try:
+            if status["ready"]:
+                local_dir = Path(status["directory"])
+                tokenizer = AutoTokenizer.from_pretrained(str(local_dir), local_files_only=True)
+                model = AutoModelForSequenceClassification.from_pretrained(str(local_dir), local_files_only=True)
+                _roberta_model = (model, tokenizer)
+                _roberta_backend = "local_files"
+            else:
+                _roberta_model = _load_artifact(config.ROBERTA_MODEL_PATH)
+                _roberta_backend = "pickle"
+            _roberta_last_error = None
+        except Exception as exc:  # noqa: BLE001
+            _roberta_backend = "load_failed"
+            _roberta_last_error = f"{type(exc).__name__}: {exc}"
+            raise
     return _roberta_model
+
+
+def get_roberta_diagnostics(load_model: bool = False) -> dict:
+    """Return explicit diagnostics about which RoBERTa backend is used."""
+    global _roberta_backend
+
+    if load_model:
+        try:
+            _get_roberta_model()
+        except Exception:  # noqa: BLE001
+            pass
+
+    loaded = _roberta_model is not None
+    if loaded and _roberta_backend == "not_loaded":
+        _roberta_backend = "local_files" if isinstance(_roberta_model, tuple) else "pickle"
+
+    return {
+        "backend": _roberta_backend,
+        "loaded": loaded,
+        "local_files": _roberta_local_files_status(),
+        "pickle_path": str(config.ROBERTA_MODEL_PATH),
+        "pickle_exists": Path(config.ROBERTA_MODEL_PATH).exists(),
+        "last_error": _roberta_last_error,
+    }
 
 
 def _get_xgboost_artifacts():

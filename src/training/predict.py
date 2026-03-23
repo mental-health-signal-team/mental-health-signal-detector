@@ -38,6 +38,11 @@ def roberta_predict(model, text: str, tokenizer=None, preprocess_fn=preprocess_t
     """Predict with a RoBERTa artifact, supporting transformers, sklearn, or pipeline objects."""
     preprocessed_text = preprocess_fn(text)
 
+    if isinstance(model, tuple) and len(model) == 2:
+        model, bundled_tokenizer = model
+        if tokenizer is None:
+            tokenizer = bundled_tokenizer
+
     if hasattr(model, "predict_proba"):
         probability = float(model.predict_proba([preprocessed_text])[0][1])
         return {"label": int(probability >= 0.5), "probability": probability}
@@ -68,16 +73,13 @@ def roberta_predict(model, text: str, tokenizer=None, preprocess_fn=preprocess_t
             tokenizer_name = "roberta-base"
 
         try:
-            tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+            tokenizer = AutoTokenizer.from_pretrained(tokenizer_name, local_files_only=True)
         except Exception as exc:  # noqa: BLE001
-            fallback_name = "roberta-base"
-            if tokenizer_name != fallback_name:
-                tokenizer = AutoTokenizer.from_pretrained(fallback_name)
-            else:
-                raise ValueError(
-                    "Unable to load a RoBERTa tokenizer. "
-                    "Bundle tokenizer files with the model artifact or ensure Hugging Face access."
-                ) from exc
+            raise ValueError(
+                "Unable to load a local RoBERTa tokenizer. "
+                "Add local tokenizer files (config.json, tokenizer_config.json, tokenizer.json) "
+                "under models/mental_roberta_base_files."
+            ) from exc
 
     inputs = tokenizer(
         preprocessed_text,
