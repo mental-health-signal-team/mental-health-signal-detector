@@ -19,12 +19,14 @@ def _transformer_predict(
     text: str,
     tokenizer_name: str,
     preprocess_fn=preprocess_text,
+    tokenizer=None,
 ) -> dict:
     """Generic inference for any HuggingFace sequence classification model."""
     preprocessed_text = preprocess_fn(text)
-    if tokenizer_name not in _TOKENIZER_CACHE:
-        _TOKENIZER_CACHE[tokenizer_name] = AutoTokenizer.from_pretrained(tokenizer_name)
-    tokenizer = _TOKENIZER_CACHE[tokenizer_name]
+    if tokenizer is None:
+        if tokenizer_name not in _TOKENIZER_CACHE:
+            _TOKENIZER_CACHE[tokenizer_name] = AutoTokenizer.from_pretrained(tokenizer_name)
+        tokenizer = _TOKENIZER_CACHE[tokenizer_name]
     inputs = tokenizer(
         preprocessed_text,
         return_tensors="pt",
@@ -42,9 +44,9 @@ def _transformer_predict(
 
 def distilbert_predict(model, text: str, tokenizer=None, preprocess_fn=preprocess_text) -> dict:
     """Predict class label/probability with a fine-tuned DistilBERT classifier."""
-    return _transformer_predict(model, text, "distilbert-base-uncased", preprocess_fn)
+    return _transformer_predict(model, text, "distilbert-base-uncased", preprocess_fn, tokenizer)
 
 
 def mental_roberta_predict(model, text: str, tokenizer=None, preprocess_fn=preprocess_text) -> dict:
     """Predict class label/probability with a fine-tuned mental/mental-roberta-base classifier."""
-    return _transformer_predict(model, text, "roberta-base", preprocess_fn)
+    return _transformer_predict(model, text, "roberta-base", preprocess_fn, tokenizer)
