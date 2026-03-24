@@ -37,3 +37,23 @@ class ExplainResponse(BaseModel):
     colored_html: str
     word_importance: dict[str, float]
     note: str | None = None
+
+
+class DayCount(BaseModel):
+    """Prediction count for a single day."""
+
+    date: str
+    count: int
+
+
+class StatsResponse(BaseModel):
+    """Response model for GET /stats endpoint."""
+
+    total_predictions: int
+    distress_count: int
+    no_distress_count: int
+    risk_level_counts: dict[str, int]
+    model_usage: dict[str, int]
+    predictions_by_day: list[DayCount]
+    avg_confidence: float
+    distress_by_model: dict[str, int]
