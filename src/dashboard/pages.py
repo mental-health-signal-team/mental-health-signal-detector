@@ -151,7 +151,24 @@ def render_risk_message(label: int, probability: float) -> None:
 def render_prediction_page(api_url: str) -> None:
     """Render the default text prediction page."""
     _render_hero("prediction")
-    st.warning("⚠️ This tool is not a medical diagnosis system")
+    st.markdown(
+        """
+        <div style="
+            background: rgba(255,180,0,0.08);
+            border-left: 4px solid #f0a500;
+            border-radius: 0 0.4rem 0.4rem 0;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1.6rem;
+            color: #f5dfa0;
+            font-size: 0.9rem;
+        ">
+            ⚠️ <b>This is not a clinical tool.</b> It is an early-warning smoke detector —
+            designed to flag potential risk, not to diagnose. Always defer to qualified
+            mental health professionals.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     st.markdown('<p class="section-title">Input text</p>', unsafe_allow_html=True)
 
     _render_demo_sentence_picker(text_key="predict_text", key_prefix="predict")

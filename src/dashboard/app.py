@@ -8,12 +8,14 @@ from dotenv import load_dotenv
 
 try:
     from src.dashboard.pages import render_models_board_page, render_prediction_page, render_word_importance_page
+    from src.dashboard.about import render_about_page
 except ModuleNotFoundError:
     # Streamlit can launch from a cwd that does not include project root in sys.path.
     project_root = Path(__file__).resolve().parents[2]
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
     from src.dashboard.pages import render_models_board_page, render_prediction_page, render_word_importance_page
+    from src.dashboard.about import render_about_page
 
 load_dotenv()
 API_URL = os.getenv("API_URL", "http://localhost:8000")
@@ -222,7 +224,7 @@ def main() -> None:
     st.sidebar.caption(f"API endpoint: {api_url}")
     selected_page = st.sidebar.radio(
         "Go to",
-        ["Prediction", "Word Importance", "Models Board"],
+        ["Prediction", "Word Importance", "Models Board", "About"],
         index=0,
     )
 
@@ -230,8 +232,10 @@ def main() -> None:
         render_prediction_page(api_url)
     elif selected_page == "Word Importance":
         render_word_importance_page(api_url)
-    else:
+    elif selected_page == "Models Board":
         render_models_board_page(api_url)
+    else:
+        render_about_page()
 
     st.markdown("</div>", unsafe_allow_html=True)
 
