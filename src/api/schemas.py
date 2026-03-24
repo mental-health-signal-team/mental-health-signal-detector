@@ -7,7 +7,7 @@ class PredictionRequest(BaseModel):
     """Request model for prediction endpoint."""
 
     text: str
-    model_type: Literal["lr", "distilbert", "mental_roberta", "xgboost"] = "lr"
+    model_type: Literal["lr", "distilbert", "mental_roberta", "mentalbert", "xgboost"] = "lr"
 
 
 class PredictionResponse(BaseModel):
@@ -21,7 +21,7 @@ class ExplainRequest(BaseModel):
     """Request model for explanation endpoint."""
 
     text: str
-    model_type: Literal["lr", "distilbert", "mental_roberta", "xgboost"] = "lr"
+    model_type: Literal["lr", "distilbert", "mental_roberta", "mentalbert", "xgboost"] = "lr"
     threshold: float = 0.005
     max_tokens: int = 40
 

@@ -16,9 +16,11 @@ ensure_models(config.MODELS_DIR, config.GDRIVE_MODEL_FOLDER_ID)
 _lr_model = joblib.load(config.LR_MODEL_PATH)
 _lr_vectorizer = joblib.load(config.VECTORIZER_PATH)
 _distilbert_model = None  # Lazy load the DistilBERT model when needed
+_distilbert_tokenizer = None
 _mental_roberta_model = None  # Lazy load the Mental Roberta model when needed
-_xgboost_model = None
-_xgboost_vectorizer = None
+_mental_roberta_tokenizer = None
+_xgboost_model = None  # Lazy load the XGBoost model when needed
+_xgboost_vectorizer = None  # Lazy load the XGBoost vectorizer when needed
 
 
 def _get_distilbert_model():
@@ -27,6 +29,14 @@ def _get_distilbert_model():
     if _distilbert_model is None:
         _distilbert_model = AutoModelForSequenceClassification.from_pretrained(config.DISTILBERT_MODEL_HF_PATH)
     return _distilbert_model
+
+
+def _get_distilbert_tokenizer():
+    """Load DistilBERT tokenizer lazily and return it."""
+    global _distilbert_tokenizer
+    if _distilbert_tokenizer is None:
+        _distilbert_tokenizer = AutoTokenizer.from_pretrained(config.DISTILBERT_MODEL_HF_PATH)
+    return _distilbert_tokenizer
 
 
 def _get_mental_roberta_model():
@@ -38,6 +48,14 @@ def _get_mental_roberta_model():
     return _mental_roberta_model
 
 
+def _get_mental_roberta_tokenizer():
+    """Load tokenizer for MentalRoBERTa model lazily and return it."""
+    global _mental_roberta_tokenizer
+    if _mental_roberta_tokenizer is None:
+        _mental_roberta_tokenizer = AutoTokenizer.from_pretrained(config.MENTAL_ROBERTA_HF_PATH)
+    return _mental_roberta_tokenizer
+
+
 def _get_xgboost_artifacts():
     """Load and cache XGBoost model/vectorizer on first use."""
     global _xgboost_model, _xgboost_vectorizer
@@ -47,14 +65,6 @@ def _get_xgboost_artifacts():
     return _xgboost_model, _xgboost_vectorizer
 
 
-def _get_distilbert_tokenizer():
-    """Load DistilBERT tokenizer lazily and return it."""
-    global _distilbert_tokenizer
-    if _distilbert_tokenizer is None:
-        _distilbert_tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
-    return _distilbert_tokenizer
-
-
 def predict(text: str, model_type: str = "lr") -> dict:
     """Predict the probability of a mental health signal
     in the given text using the specified model type."""
@@ -62,7 +72,7 @@ def predict(text: str, model_type: str = "lr") -> dict:
         return predictor.lr_predict(_lr_model, _lr_vectorizer, text)
     elif model_type == "distilbert":
         return predictor.distilbert_predict(_get_distilbert_model(), text)
-    elif model_type == "mental_roberta":
+    elif model_type in {"mental_roberta", "mentalbert"}:
         return predictor.mental_roberta_predict(_get_mental_roberta_model(), text)
     elif model_type == "xgboost":
         xgb_model, xgb_vectorizer = _get_xgboost_artifacts()
@@ -75,7 +85,7 @@ def color_text_full(
     text: str,
     word_importance: Mapping[str, float],
     vectorizer: Any,
-    threshold: float = 0.005,
+    threshold: float = 0.05,
 ) -> str:
     """Color words using SHAP importance values from a fitted vectorizer."""
     analyzer = vectorizer.build_analyzer()
@@ -130,6 +140,18 @@ def _distilbert_word_importance(text: str, max_tokens: int = 40) -> dict[str, fl
     """Compute token importance for DistilBERT with gradient x input attribution."""
     model = _get_distilbert_model()
     tokenizer = _get_distilbert_tokenizer()
+    return _transformer_word_importance(model, tokenizer, text, max_tokens=max_tokens)
+
+
+def _mental_roberta_word_importance(text: str, max_tokens: int = 40) -> dict[str, float]:
+    """Compute token importance for MentalRoBERTa with gradient x input attribution."""
+    model = _get_mental_roberta_model()
+    tokenizer = _get_mental_roberta_tokenizer()
+    return _transformer_word_importance(model, tokenizer, text, max_tokens=max_tokens)
+
+
+def _transformer_word_importance(model: Any, tokenizer: Any, text: str, max_tokens: int = 40) -> dict[str, float]:
+    """Compute word importance from a transformer classifier using gradient x input."""
     preprocessed_text = preprocess_text(text)
 
     encoded = tokenizer(
@@ -176,6 +198,15 @@ def _distilbert_word_importance(text: str, max_tokens: int = 40) -> dict[str, fl
             current_score += float(score)
             continue
 
+        if token.startswith("Ġ") or token.startswith("▁"):
+            piece = token[1:]
+            if current_word:
+                key = current_word.lower()
+                merged[key] = merged.get(key, 0.0) + float(current_score)
+            current_word = piece
+            current_score = float(score)
+            continue
+
         if current_word:
             key = current_word.lower()
             merged[key] = merged.get(key, 0.0) + float(current_score)
@@ -193,10 +224,24 @@ def _distilbert_word_importance(text: str, max_tokens: int = 40) -> dict[str, fl
     return merged
 
 
+def _xgboost_word_importance(text: str) -> dict[str, float]:
+    """Approximate local token contributions for XGBoost using tfidf value x feature importance."""
+    xgb_model, xgb_vectorizer = _get_xgboost_artifacts()
+    preprocessed_text = preprocess_text(text)
+    features = xgb_vectorizer.transform([preprocessed_text]).tocsr()
+    feature_names = xgb_vectorizer.get_feature_names_out()
+
+    feature_importances = getattr(xgb_model, "feature_importances_", None)
+    if feature_importances is None:
+        return {}
+
+    return {feature_names[idx]: float(value * feature_importances[idx]) for idx, value in zip(features.indices, features.data)}
+
+
 def _color_text_distilbert(
     text: str,
     word_importance: Mapping[str, float],
-    threshold: float = 0.005,
+    threshold: float = 0.05,
 ) -> str:
     """Color text for DistilBERT explanation using lowercased word matching."""
     words = re.findall(r"\w+|\W+", text)
@@ -219,10 +264,18 @@ def _color_text_distilbert(
     return "".join(colored_words)
 
 
-def explain(text: str, model_type: str = "lr", threshold: float = 0.005, max_tokens: int = 40) -> dict:
+def _filter_single_word_importance(word_importance: Mapping[str, float]) -> dict[str, float]:
+    """Keep only single-word keys (no whitespace) in importance mapping."""
+    filtered: dict[str, float] = {}
+    for token, value in word_importance.items():
+        cleaned = token.strip()
+        if cleaned and len(cleaned.split()) == 1:
+            filtered[cleaned] = float(value)
+    return filtered
+
+
+def explain(text: str, model_type: str = "lr", threshold: float = 0.05, max_tokens: int = 40) -> dict:
     """Predict and return a colorized token-importance explanation payload."""
-    if threshold < 0:
-        raise ValueError("threshold must be >= 0.")
     if max_tokens <= 0:
         raise ValueError("max_tokens must be > 0.")
 
@@ -239,15 +292,28 @@ def explain(text: str, model_type: str = "lr", threshold: float = 0.005, max_tok
 
     note = None
     if model_type == "lr":
-        word_importance = _lr_word_importance(text)
+        raw_word_importance = _lr_word_importance(text)
+        word_importance = _filter_single_word_importance(raw_word_importance)
         vectorizer = _lr_vectorizer
         colored_html = color_text_full(text, word_importance, vectorizer, threshold=threshold)
     elif model_type == "distilbert":
-        word_importance = _distilbert_word_importance(text, max_tokens=max_tokens)
+        raw_word_importance = _distilbert_word_importance(text, max_tokens=max_tokens)
+        word_importance = _filter_single_word_importance(raw_word_importance)
         colored_html = _color_text_distilbert(text, word_importance, threshold=threshold)
         note = "DistilBERT importance is gradient-based and can vary slightly between runs and tokenization."  # noqa: E501
+    elif model_type in {"mental_roberta", "mentalbert"}:
+        raw_word_importance = _mental_roberta_word_importance(text, max_tokens=max_tokens)
+        word_importance = _filter_single_word_importance(raw_word_importance)
+        colored_html = _color_text_distilbert(text, word_importance, threshold=threshold)
+        note = "MentalBERT importance is gradient-based and can vary slightly between runs and tokenization."
+    elif model_type == "xgboost":
+        raw_word_importance = _xgboost_word_importance(text)
+        word_importance = _filter_single_word_importance(raw_word_importance)
+        _, xgb_vectorizer = _get_xgboost_artifacts()
+        colored_html = color_text_full(text, word_importance, xgb_vectorizer, threshold=threshold)
+        note = "XGBoost word importance is an approximation based on tfidf values and feature importance."
     else:
-        raise ValueError("Unsupported model_type. Use 'lr' or 'distilbert'.")
+        raise ValueError("Unsupported model_type. Use 'lr', 'distilbert', 'mentalbert', or 'xgboost'.")
 
     return {
         "label": label,

@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 try:
     from src.dashboard.about import render_about_page
-    from src.dashboard.pages import render_prediction_page, render_word_importance_page
+    from src.dashboard.pages import render_models_board_page, render_prediction_page, render_word_importance_page
     from src.dashboard.stats import render_stats_page
 except ModuleNotFoundError:
     # Streamlit can launch from a cwd that does not include project root in sys.path.
@@ -16,7 +16,7 @@ except ModuleNotFoundError:
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
     from src.dashboard.about import render_about_page
-    from src.dashboard.pages import render_prediction_page, render_word_importance_page
+    from src.dashboard.pages import render_models_board_page, render_prediction_page, render_word_importance_page
     from src.dashboard.stats import render_stats_page
 
 load_dotenv()
@@ -198,7 +198,7 @@ def _resolve_api_url() -> str:
         if _is_api_reachable(url):
             return url
 
-    return API_URL_LOCAL
+    return API_URL_LOCAL  # On laisse comme ça pour l'instant
 
 
 def main() -> None:
@@ -214,7 +214,7 @@ def main() -> None:
     _inject_theme()
     _render_shell()
 
-    api_url = _resolve_api_url()
+    api_url = API_URL_LOCAL
 
     st.sidebar.markdown(
         '<h2 style="margin:0; line-height:1.05; color:#eaf5ff;">Mental Health<br/>Signal Detector</h2>',
@@ -226,7 +226,7 @@ def main() -> None:
     st.sidebar.caption(f"API endpoint: {api_url}")
     selected_page = st.sidebar.radio(
         "Go to",
-        ["Prediction", "Word Importance", "Stats", "About the Models"],
+        ["Prediction", "Word Importance", "Models Board", "Stats", "About the Models"],
         index=0,
     )
 
@@ -236,8 +236,10 @@ def main() -> None:
         render_word_importance_page(api_url)
     elif selected_page == "Stats":
         render_stats_page(api_url)
-    else:
+    elif selected_page == "About the Models":
         render_about_page()
+    else:
+        render_models_board_page(api_url)
 
     st.markdown("</div>", unsafe_allow_html=True)
 
