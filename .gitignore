@@ -42,6 +42,7 @@ wheels/
 .venv/
 venv/
 .env/
+.python-version
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -87,13 +88,21 @@ temp/
 kaggle.json
 .config/kaggle/kaggle.json
 
+# exclude virtual envs
+.venv
+venv/
+ENV/
+*venv*
+
 # Data and artifacts
 data/
 data/raw/
 data/processed/
 data/external/
 models/
-artifacts
+
+artifacts/
+
 
 # Streamlitt
 .streamlit/secrets.toml

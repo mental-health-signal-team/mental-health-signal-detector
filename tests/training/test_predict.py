@@ -55,3 +55,23 @@ def test_distilbert_predict():
     assert set(model.call_args.kwargs) == {"input_ids", "attention_mask"}
     assert result["label"] == 1
     assert 0.5 < result["probability"] < 1.0
+
+
+def test_xgboost_predict():
+    """xgboost_predict preprocesses, vectorizes and returns thresholded output."""
+    model = Mock()
+    model.predict_proba.return_value = np.array([[0.7, 0.3]])
+    vectorizer = Mock()
+    vectorizer.transform.return_value = np.array([[2.0]])
+
+    result = predict_module.xgboost_predict(
+        model,
+        vectorizer,
+        "sample",
+        preprocess_fn=lambda text: f"prep::{text}",
+    )
+
+    assert result == {"label": 0, "probability": 0.3}
+    vectorizer.transform.assert_called_once_with(["prep::sample"])
+    model.predict_proba.assert_called_once()
+    assert model.predict_proba.call_args.args[0].shape == (1, 1)
