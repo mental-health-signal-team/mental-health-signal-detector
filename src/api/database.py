@@ -2,8 +2,11 @@ import hashlib
 import os
 from datetime import datetime, timedelta, timezone
 
+from dotenv import load_dotenv
 from sqlalchemy import Column, DateTime, Float, Integer, String, create_engine, func, select
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
+
+load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./predictions.db")
 

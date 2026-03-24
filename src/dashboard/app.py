@@ -214,7 +214,7 @@ def main() -> None:
     _inject_theme()
     _render_shell()
 
-    api_url = API_URL_LOCAL
+    api_url = _resolve_api_url()
 
     st.sidebar.markdown(
         '<h2 style="margin:0; line-height:1.05; color:#eaf5ff;">Mental Health<br/>Signal Detector</h2>',

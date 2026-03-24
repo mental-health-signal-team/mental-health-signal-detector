@@ -1,13 +1,10 @@
 from contextlib import asynccontextmanager
 
-from dotenv import load_dotenv
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 
 import src.api.services as services
 from src.api.database import get_stats, init_db, log_prediction
 from src.api.schemas import ExplainRequest, ExplainResponse, PredictionRequest, PredictionResponse, StatsResponse
-
-load_dotenv()  # must run before local imports so os.getenv() in database.py sees .env values
 
 
 @asynccontextmanager
