@@ -174,7 +174,7 @@ def render_about_page() -> None:
     components.html(
         """
         <div style="background:rgba(4,21,43,0.95); border:1px solid rgba(66,216,240,0.18);
-                    border-radius:0.5rem; padding:1.5rem 1.5rem 1rem;">
+                    border-radius:0.5rem; padding:1.5rem 1.5rem 1rem; max-width:800px; margin:0 auto;">
           <svg viewBox="0 0 800 460" xmlns="http://www.w3.org/2000/svg"
                style="width:100%; height:auto; display:block;">
             <defs>
@@ -249,7 +249,7 @@ def render_about_page() -> None:
           </svg>
         </div>
         """,
-        height=490,
+        height=520,
     )
 
     # ── Performance comparison ────────────────────────────────────────────────
