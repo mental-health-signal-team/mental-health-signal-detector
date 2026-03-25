@@ -167,6 +167,91 @@ def render_about_page() -> None:
         st.markdown("<div style='height:0.8rem'></div>", unsafe_allow_html=True)
         _model_card(_MODELS[3])
 
+    # ── Model family diagram ──────────────────────────────────────────────────
+    st.markdown('<p class="section-title">Model family</p>', unsafe_allow_html=True)
+    import streamlit.components.v1 as components
+
+    components.html(
+        """
+        <div style="background:rgba(4,21,43,0.95); border:1px solid rgba(66,216,240,0.18);
+                    border-radius:0.5rem; padding:1.5rem 1.5rem 1rem;">
+          <svg viewBox="0 0 800 460" xmlns="http://www.w3.org/2000/svg"
+               style="width:100%; height:auto; display:block;">
+            <defs>
+              <marker id="mhsd-arrow" markerWidth="10" markerHeight="7"
+                      refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#6a8099"/>
+              </marker>
+            </defs>
+
+            <!-- BERT -->
+            <rect x="300" y="20" width="200" height="65" rx="10"
+                  fill="rgba(40,55,70,0.9)" stroke="#8a9ab0" stroke-width="1.5"/>
+            <text x="400" y="48" text-anchor="middle" fill="#ffffff"
+                  font-family="sans-serif" font-size="16" font-weight="700">BERT</text>
+            <text x="400" y="67" text-anchor="middle" fill="#aabbcc"
+                  font-family="sans-serif" font-size="12">Bidirectional transformer</text>
+
+            <!-- Arrow: BERT → DistilBERT -->
+            <line x1="358" y1="85" x2="163" y2="193"
+                  stroke="#6a8099" stroke-width="1.5" marker-end="url(#mhsd-arrow)"/>
+            <text x="242" y="128" text-anchor="middle" fill="#8a9ab0"
+                  font-family="sans-serif" font-size="11">distillation</text>
+
+            <!-- Arrow: BERT → RoBERTa -->
+            <line x1="412" y1="85" x2="412" y2="193"
+                  stroke="#6a8099" stroke-width="1.5" marker-end="url(#mhsd-arrow)"/>
+            <text x="432" y="128" text-anchor="start" fill="#8a9ab0"
+                  font-family="sans-serif" font-size="11">more data,</text>
+            <text x="432" y="143" text-anchor="start" fill="#8a9ab0"
+                  font-family="sans-serif" font-size="11">better training</text>
+
+            <!-- DistilBERT -->
+            <rect x="45" y="195" width="220" height="75" rx="10"
+                  fill="rgba(14,122,92,0.35)" stroke="#0e7a5c" stroke-width="2"/>
+            <text x="155" y="226" text-anchor="middle" fill="#4eeebb"
+                  font-family="sans-serif" font-size="15" font-weight="700">DistilBERT</text>
+            <text x="155" y="248" text-anchor="middle" fill="#9ed8c0"
+                  font-family="sans-serif" font-size="12">Smaller, faster BERT</text>
+
+            <!-- RoBERTa -->
+            <rect x="305" y="195" width="210" height="75" rx="10"
+                  fill="rgba(26,110,142,0.45)" stroke="#1a6e8e" stroke-width="2"/>
+            <text x="410" y="226" text-anchor="middle" fill="#42d8f0"
+                  font-family="sans-serif" font-size="15" font-weight="700">RoBERTa</text>
+            <text x="410" y="248" text-anchor="middle" fill="#9ad4e8"
+                  font-family="sans-serif" font-size="12">Robustly optimized BERT</text>
+
+            <!-- Arrow: RoBERTa → MentalRoBERTa -->
+            <line x1="478" y1="262" x2="576" y2="328"
+                  stroke="#6a8099" stroke-width="1.5" marker-end="url(#mhsd-arrow)"/>
+            <text x="554" y="287" text-anchor="middle" fill="#8a9ab0"
+                  font-family="sans-serif" font-size="11">domain pretraining</text>
+
+            <!-- MentalRoBERTa -->
+            <rect x="465" y="330" width="290" height="75" rx="10"
+                  fill="rgba(107,63,160,0.45)" stroke="#6b3fa0" stroke-width="2"/>
+            <text x="610" y="361" text-anchor="middle" fill="#c49ae0"
+                  font-family="sans-serif" font-size="15" font-weight="700">MentalRoBERTa</text>
+            <text x="610" y="383" text-anchor="middle" fill="#c8b0e0"
+                  font-family="sans-serif" font-size="12">Reddit mental health text</text>
+
+            <!-- Legend -->
+            <rect x="30" y="428" width="13" height="13" rx="2"
+                  fill="rgba(107,63,160,0.6)" stroke="#6b3fa0" stroke-width="1.5"/>
+            <text x="50" y="440" fill="#8a9ab0" font-family="sans-serif" font-size="11">Domain adaptation</text>
+            <rect x="205" y="428" width="13" height="13" rx="2"
+                  fill="rgba(14,122,92,0.5)" stroke="#0e7a5c" stroke-width="1.5"/>
+            <text x="225" y="440" fill="#8a9ab0" font-family="sans-serif" font-size="11">Knowledge distillation</text>
+            <rect x="410" y="428" width="13" height="13" rx="2"
+                  fill="rgba(40,55,70,0.9)" stroke="#8a9ab0" stroke-width="1.5"/>
+            <text x="430" y="440" fill="#8a9ab0" font-family="sans-serif" font-size="11">Training improvements</text>
+          </svg>
+        </div>
+        """,
+        height=490,
+    )
+
     # ── Performance comparison ────────────────────────────────────────────────
     st.markdown("<br/>", unsafe_allow_html=True)
     st.markdown('<p class="section-title">Performance comparison — depressed class</p>', unsafe_allow_html=True)
@@ -186,7 +271,10 @@ def render_about_page() -> None:
     ).set_index("Model")
 
     st.dataframe(
-        df.style.highlight_max(subset=["Accuracy", "Precision", "Recall", "F1"], color="#0e4d3a"),
+        df.style.highlight_max(
+            subset=["Accuracy", "Precision", "Recall", "F1"],
+            props="background-color:#0e4d3a; color:#7fffd4; font-weight:700;",
+        ),
         use_container_width=True,
     )
     st.caption(

@@ -159,7 +159,6 @@ def render_prediction_page(api_url: str) -> None:
 
     st.markdown('<p class="section-title">Input text</p>', unsafe_allow_html=True)
 
-    _render_demo_sentence_picker(text_key="predict_text", key_prefix="predict")
     text_input = st.text_area("Input Text", height=200, key="predict_text")
     st.markdown('<p class="section-title">Model selection</p>', unsafe_allow_html=True)
     model_type = st.selectbox("Select Model", MODEL_OPTIONS, key="predict_model")
@@ -252,10 +251,10 @@ def render_word_importance_page(api_url: str) -> None:
         st.markdown("### Highlighted sentence")
         st.markdown(
             (
-                "<p><b>Legend:</b> "
-                '<span style="color:green">green</span> Positive words, '
-                '<span style="color:red">red</span> Negative words, '
-                '<span style="color:white;background:#111;padding:0 4px;">white</span> Neutral words</p>'
+                "<p style='color:#bad7eb;'><b style='color:#eaf5ff;'>Legend:</b> "
+                '<span style="color:#4eeebb;font-weight:700;">green</span> Positive words, '
+                '<span style="color:#ff6b6b;font-weight:700;">red</span> Negative words, '
+                '<span style="color:#eaf5ff;background:#1a2f4a;padding:0 4px;border-radius:2px;">white</span> Neutral words</p>'
             ),
             unsafe_allow_html=True,
         )

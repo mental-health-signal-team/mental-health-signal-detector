@@ -120,3 +120,5 @@ docker/.env
 .python-version
 notebooks/Thomas.ipynb
 predictions.db
+
+scripts/generate_presentation.py
