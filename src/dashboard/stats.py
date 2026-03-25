@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 import altair as alt
 import pandas as pd
 import requests
@@ -6,6 +8,12 @@ import streamlit as st
 _AXIS = {"gridColor": "#1a3a5c", "labelColor": "#bad7eb", "titleColor": "#42d8f0"}
 _MODEL_COLOR = "#0ec7e6"
 _BG = "#04152b"
+_MODEL_DISPLAY_NAMES = {
+    "lr": "Logistic Regression",
+    "xgboost": "XGBoost",
+    "distilbert": "DistilBERT",
+    "mental_roberta": "MentalRoBERTa",
+}
 
 
 def _metric_card(label: str, value: str, sub: str = "") -> str:
@@ -60,7 +68,8 @@ def render_stats_page(api_url: str) -> None:
     distress = data["distress_count"]
     distress_rate = distress / total
     model_usage: dict = data["model_usage"]
-    most_used = max(model_usage, key=model_usage.get) if model_usage else "—"
+    most_used_key = max(model_usage, key=model_usage.get) if model_usage else ""
+    most_used_label = _MODEL_DISPLAY_NAMES.get(most_used_key, most_used_key.upper()) if most_used_key else "—"
     avg_conf = data.get("avg_confidence", 0.0)
 
     # ── Metric cards ──────────────────────────────────────────────────────────
@@ -69,7 +78,7 @@ def render_stats_page(api_url: str) -> None:
     c1.markdown(_metric_card("Total Predictions", f"{total:,}"), unsafe_allow_html=True)
     c2.markdown(_metric_card("Distress Rate", f"{distress_rate:.1%}", f"{distress:,} flagged"), unsafe_allow_html=True)
     c3.markdown(_metric_card("Avg Confidence", f"{avg_conf:.1%}"), unsafe_allow_html=True)
-    c4.markdown(_metric_card("Most Used Model", most_used.upper()), unsafe_allow_html=True)
+    c4.markdown(_metric_card("Most Used Model", most_used_label), unsafe_allow_html=True)
 
     st.markdown("<br/>", unsafe_allow_html=True)
 
@@ -133,7 +142,9 @@ def render_stats_page(api_url: str) -> None:
 
     with col_ml:
         st.markdown('<p class="section-title">Model Usage</p>', unsafe_allow_html=True)
-        model_df = pd.DataFrame([{"Model": k.upper(), "count": v} for k, v in sorted(model_usage.items(), key=lambda x: -x[1])])
+        model_df = pd.DataFrame(
+            [{"Model": _MODEL_DISPLAY_NAMES.get(k, k.upper()), "count": v} for k, v in sorted(model_usage.items(), key=lambda x: -x[1])]
+        )
         model_chart = (
             alt.Chart(model_df)
             .mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color=_MODEL_COLOR)
@@ -151,7 +162,9 @@ def render_stats_page(api_url: str) -> None:
         st.markdown('<p class="section-title">Distress Flags by Model</p>', unsafe_allow_html=True)
         distress_model: dict = data.get("distress_by_model", {})
         if distress_model:
-            dm_df = pd.DataFrame([{"Model": k.upper(), "Distress": v} for k, v in sorted(distress_model.items(), key=lambda x: -x[1])])
+            dm_df = pd.DataFrame(
+                [{"Model": _MODEL_DISPLAY_NAMES.get(k, k.upper()), "Distress": v} for k, v in sorted(distress_model.items(), key=lambda x: -x[1])]
+            )
             dm_chart = (
                 alt.Chart(dm_df)
                 .mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color="#e74c3c")
@@ -174,6 +187,11 @@ def render_stats_page(api_url: str) -> None:
         st.markdown('<p class="section-title">Predictions — last 7 days</p>', unsafe_allow_html=True)
         trend_df = pd.DataFrame(trend_data)
         trend_df["date"] = pd.to_datetime(trend_df["date"])
+        now = datetime.now(timezone.utc)
+        x_domain = [
+            (now - timedelta(days=7)).isoformat(),
+            now.isoformat(),
+        ]
         trend_chart = (
             alt.Chart(trend_df)
             .mark_area(
@@ -191,7 +209,12 @@ def render_stats_page(api_url: str) -> None:
                 ),
             )
             .encode(
-                x=alt.X("date:T", title="Date", axis=alt.Axis(format="%b %d", **_AXIS)),
+                x=alt.X(
+                    "date:T",
+                    title="Date",
+                    axis=alt.Axis(format="%b %d", tickCount=7, **_AXIS),
+                    scale=alt.Scale(domain=x_domain),
+                ),
                 y=alt.Y("count:Q", title="Predictions", axis=alt.Axis(**_AXIS)),
                 tooltip=[alt.Tooltip("date:T", format="%b %d"), "count:Q"],
             )

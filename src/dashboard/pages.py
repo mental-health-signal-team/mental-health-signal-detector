@@ -9,10 +9,10 @@ GoogleTranslator = None
 TRANSLATION_SUCCESS_NOTE = "Input was auto-translated to English before analysis."
 MODEL_OPTIONS = ["lr", "xgboost", "distilbert", "mental_roberta"]
 MODEL_DISPLAY_NAMES = {
-    "lr": "LogisticRegression",
+    "lr": "Logistic Regression",
     "xgboost": "XGBoost",
-    "distilbert": "DistilBert",
-    "mental_roberta": "MentalRoberta",
+    "distilbert": "DistilBERT",
+    "mental_roberta": "MentalRoBERTa",
 }
 DEMO_SENTENCES = {
     "Example 1": "I feel hopeless every day.",
@@ -83,11 +83,11 @@ def _render_translation_feedback(translation_note: str | None) -> None:
 def _render_hero(mode: str) -> None:
     """Render page hero with a visual style matching the project poster."""
     if mode == "prediction":
-        subtitle = "Détection de signaux de detresse mentale par NLP."
+        subtitle = "NLP-powered detection of early mental distress signals."
     elif mode == "board":
-        subtitle = "Comparez les predictions des 4 modeles sur un seul tableau de bord avec label et niveau de confiance."
+        subtitle = "Compare predictions from all 4 models side-by-side — label and confidence for each."
     else:
-        subtitle = "Explorez les mots qui influencent la prediction pour mieux expliquer chaque resultat au niveau token."
+        subtitle = "Explore which words drive each prediction via token-level attribution scores."
 
     st.markdown(
         """
@@ -154,16 +154,26 @@ def render_prediction_page(api_url: str) -> None:
     """Render the default text prediction page."""
 
     _render_hero("prediction")
-    st.warning("⚠️ This tool is not a medical diagnosis system")
+    st.markdown(
+        """
+        <div style="background:rgba(255,180,0,0.08);border-left:4px solid #f0a500;
+                    border-radius:0 0.4rem 0.4rem 0;padding:0.75rem 1rem;
+                    margin-bottom:1.2rem;color:#f5dfa0;font-size:0.9rem;">
+            ⚠️ <b>This tool is not a medical diagnosis system.</b>
+            It is an early-warning smoke detector — not a clinical diagnostic tool.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     render_examples(session_key="predict_text")
 
     st.markdown('<p class="section-title">Input text</p>', unsafe_allow_html=True)
 
     text_input = st.text_area("Input Text", height=200, key="predict_text")
     st.markdown('<p class="section-title">Model selection</p>', unsafe_allow_html=True)
-    model_type = st.selectbox("Select Model", MODEL_OPTIONS, key="predict_model")
+    model_type = st.selectbox("Select Model", MODEL_OPTIONS, format_func=lambda x: MODEL_DISPLAY_NAMES[x], key="predict_model")
 
-    if st.button("Predict", key="predict_button"):
+    if st.button("Predict", key="predict_button", use_container_width=True):
         if not text_input.strip():
             st.warning("Please enter some text to analyze.")
             return
@@ -208,8 +218,8 @@ def render_word_importance_page(api_url: str) -> None:
     st.markdown('<p class="section-title">Explainability sentence</p>', unsafe_allow_html=True)
     text_input = st.text_area("Sentence", height=180, key="explain_sentence")
     st.markdown('<p class="section-title">Model selection</p>', unsafe_allow_html=True)
-    model_type = st.selectbox("Explain with model", MODEL_OPTIONS, key="explain_model")
-    st.caption("LR and XGBoost use tfidf-based word scoring. DistilBERT and MentalRoberta use gradient-based token attributions.")
+    model_type = st.selectbox("Explain with model", MODEL_OPTIONS, format_func=lambda x: MODEL_DISPLAY_NAMES[x], key="explain_model")
+    st.caption("Logistic Regression and XGBoost use TF-IDF-based word scoring. DistilBERT and MentalRoBERTa use gradient-based token attributions.")
     st.markdown('<p class="section-title">Sensitivity</p>', unsafe_allow_html=True)
     threshold = st.slider(
         "Word importance threshold",
@@ -221,7 +231,7 @@ def render_word_importance_page(api_url: str) -> None:
     )
     max_tokens = 40
 
-    if st.button("Show word importance", key="predict_with_details"):
+    if st.button("Show word importance", key="predict_with_details", use_container_width=True):
         if not text_input.strip():
             st.warning("Please enter a sentence to analyze.")
             return
@@ -280,12 +290,19 @@ def render_word_importance_page(api_url: str) -> None:
 def render_models_board_page(api_url: str) -> None:
     """Render a single board with predictions from all models."""
     _render_hero("board")
+    st.markdown(
+        '<p style="color:var(--ink-200);font-size:0.9rem;margin-bottom:1rem;">'
+        "Enter any text below to run it through all 4 models simultaneously. "
+        "Results appear as a table showing each model's verdict and confidence score."
+        "</p>",
+        unsafe_allow_html=True,
+    )
     render_examples(session_key="board_text")
     st.markdown('<p class="section-title">Input text</p>', unsafe_allow_html=True)
 
     text_input = st.text_area("Input Text", height=200, key="board_text")
 
-    if st.button("Compare all models", key="board_compare_button"):
+    if st.button("Compare all models", key="board_compare_button", use_container_width=True):
         if not text_input.strip():
             st.warning("Please enter some text to analyze.")
             return

@@ -39,9 +39,10 @@ def _inject_theme() -> None:
             }
 
             .stApp {
+                overflow: hidden;
                 background:
-                    radial-gradient(circle at 88% 10%, rgba(14, 199, 230, 0.25) 0 12rem, transparent 12rem),
-                    radial-gradient(circle at 95% 78%, rgba(14, 199, 230, 0.32) 0 9rem, transparent 9rem),
+                    radial-gradient(circle at 88% 10%, rgba(14, 199, 230, 0.18) 0 12rem, transparent 12rem),
+                    radial-gradient(circle at 95% 78%, rgba(14, 199, 230, 0.22) 0 9rem, transparent 9rem),
                     linear-gradient(120deg, var(--navy-900) 0%, #031022 45%, var(--navy-800) 100%);
                 color: var(--ink-100);
                 font-family: "Trebuchet MS", "Segoe UI", sans-serif;
@@ -195,13 +196,13 @@ def _inject_theme() -> None:
                 transform: none !important;
                 filter: none !important;
             }
-            /* Active nav item uses type="primary" */
-            div[data-testid="stSidebar"] button[data-testid="baseButton-primary"] {
+            /* Active nav item uses type="primary" — higher specificity than the general rule */
+            div[data-testid="stSidebar"] .stButton > button[data-testid="baseButton-primary"] {
                 background: rgba(14, 199, 230, 0.13) !important;
                 border-left-color: var(--cyan-500) !important;
                 color: #ffffff !important;
             }
-            div[data-testid="stSidebar"] button[data-testid="baseButton-primary"]:hover {
+            div[data-testid="stSidebar"] .stButton > button[data-testid="baseButton-primary"]:hover {
                 background: rgba(14, 199, 230, 0.18) !important;
                 transform: none !important;
                 filter: none !important;
@@ -444,6 +445,27 @@ def main() -> None:
                 <span class="sb-footer-dot"></span>Connected
             </div>
             <div class="sb-footer-url">{api_url}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # ── Team ───────────────────────────────────────────────────────────────────
+    st.sidebar.markdown(
+        """
+        <div style="margin:0.8rem 0.55rem 0;padding:0.7rem 0.9rem;
+                    background:rgba(4,21,43,0.7);border:1px solid rgba(66,216,240,0.15);
+                    border-radius:0.4rem;">
+            <div style="font-size:0.6rem;font-weight:800;letter-spacing:0.1em;
+                        text-transform:uppercase;color:rgba(66,216,240,0.5);margin-bottom:0.45rem;">
+                Team
+            </div>
+            <div style="font-size:0.78rem;color:#bad7eb;line-height:1.8;">
+                Aïmen El Abidi<br/>
+                Thomas Dihn<br/>
+                Stanislav Grinchenko<br/>
+                Fabrice Moncaut
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
