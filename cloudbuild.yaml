@@ -1,0 +1,35 @@
+steps:
+  # Build the API Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - build
+      - -f
+      - docker/Dockerfile.api
+      - -t
+      - europe-west1-docker.pkg.dev/mental-health-signal-detector/mental-health-api/api:latest
+      - .
+
+  # Deploy to Cloud Run (existing env vars — DATABASE_URL etc. — are preserved on the service)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - mental-health-api
+      - --image
+      - europe-west1-docker.pkg.dev/mental-health-signal-detector/mental-health-api/api:latest
+      - --region
+      - europe-west1
+      - --platform
+      - managed
+      - --memory
+      - 4Gi
+      - --cpu
+      - '2'
+      - --timeout
+      - '300'
+
+images:
+  - europe-west1-docker.pkg.dev/mental-health-signal-detector/mental-health-api/api:latest
+
+timeout: '3600s'

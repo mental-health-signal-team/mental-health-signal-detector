@@ -3,14 +3,16 @@ import importlib
 import requests
 import streamlit as st
 
+from src.dashboard.examples import render_examples
+
 GoogleTranslator = None
 TRANSLATION_SUCCESS_NOTE = "Input was auto-translated to English before analysis."
-MODEL_OPTIONS = ["lr", "xgboost", "distilbert", "mentalbert"]
+MODEL_OPTIONS = ["lr", "xgboost", "distilbert", "mental_roberta"]
 MODEL_DISPLAY_NAMES = {
     "lr": "LogisticRegression",
     "xgboost": "XGBoost",
     "distilbert": "DistilBert",
-    "mentalbert": "MentalBert",
+    "mental_roberta": "MentalRoberta",
 }
 DEMO_SENTENCES = {
     "Example 1": "I feel hopeless every day.",
@@ -98,7 +100,7 @@ def _render_hero(mode: str) -> None:
     st.markdown(
         """
         <div class="chip-row">
-            <div class="chip">Logistic Regression · XGBoost · DistilBERT · MentalBERT</div>
+            <div class="chip">Logistic Regression · XGBoost · DistilBERT · MentalRoberta</div>
             <div class="chip">FastAPI · Streamlit</div>
         </div>
         """,
@@ -150,25 +152,11 @@ def render_risk_message(label: int, probability: float) -> None:
 
 def render_prediction_page(api_url: str) -> None:
     """Render the default text prediction page."""
+
     _render_hero("prediction")
-    st.markdown(
-        """
-        <div style="
-            background: rgba(255,180,0,0.08);
-            border-left: 4px solid #f0a500;
-            border-radius: 0 0.4rem 0.4rem 0;
-            padding: 0.75rem 1rem;
-            margin-bottom: 1.6rem;
-            color: #f5dfa0;
-            font-size: 0.9rem;
-        ">
-            ⚠️ <b>This is not a clinical tool.</b> It is an early-warning smoke detector —
-            designed to flag potential risk, not to diagnose. Always defer to qualified
-            mental health professionals.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.warning("⚠️ This tool is not a medical diagnosis system")
+    render_examples(session_key="predict_text")
+
     st.markdown('<p class="section-title">Input text</p>', unsafe_allow_html=True)
 
     _render_demo_sentence_picker(text_key="predict_text", key_prefix="predict")
@@ -184,7 +172,7 @@ def render_prediction_page(api_url: str) -> None:
         text_for_model, translation_note = _translate_to_english(text_input)
         _render_translation_feedback(translation_note)
 
-        with st.spinner("Analyzing... (first request may take up to 30s to wake the server)"):
+        with st.spinner("Analyzing... (first request may take up to 30s to wake the server and load the model)"):
             try:
                 response = requests.post(
                     f"{api_url}/predict",
@@ -223,7 +211,7 @@ def render_word_importance_page(api_url: str) -> None:
     text_input = st.text_area("Sentence", height=180, key="explain_sentence")
     st.markdown('<p class="section-title">Model selection</p>', unsafe_allow_html=True)
     model_type = st.selectbox("Explain with model", MODEL_OPTIONS, key="explain_model")
-    st.caption("LR and XGBoost use tfidf-based word scoring. DistilBERT and MentalBERT use gradient-based token attributions.")
+    st.caption("LR and XGBoost use tfidf-based word scoring. DistilBERT and MentalRoberta use gradient-based token attributions.")
     st.markdown('<p class="section-title">Sensitivity</p>', unsafe_allow_html=True)
     threshold = st.slider(
         "Word importance threshold",

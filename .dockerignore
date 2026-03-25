@@ -1,0 +1,42 @@
+# Git
+.git
+.gitignore
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Tests
+tests/
+
+# Data (raw/processed datasets, not needed at runtime)
+data/
+
+# Notebooks
+*.ipynb
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Scripts (training/download scripts, not needed at runtime)
+scripts/
+
+# Docs
+*.md
+docs/
+
+# Large model artifacts not used by the API at runtime
+# (distilbert_model.pkl is the old pickle format; API uses distilbert_hf/ instead)
+models/distilbert_model.pkl

@@ -1,0 +1,38 @@
+# Based on .gitignore but explicitly includes models/ for Cloud Build
+.gcloudignore
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+
+# Data (large, not needed for build)
+data/
+
+# Notebooks
+notebooks/
+
+# Dev/test
+tests/
+.pre-commit-config.yaml
+requirements-dev.txt
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

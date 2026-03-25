@@ -119,3 +119,4 @@ docker/.env
 
 .python-version
 notebooks/Thomas.ipynb
+predictions.db

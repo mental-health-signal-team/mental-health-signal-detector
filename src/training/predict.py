@@ -1,6 +1,7 @@
 import torch
 from transformers import AutoTokenizer
 
+from src.common import config
 from src.training.preprocess import preprocess_text
 
 _TOKENIZER_CACHE: dict[str, AutoTokenizer] = {}
@@ -44,12 +45,12 @@ def _transformer_predict(
 
 def distilbert_predict(model, text: str, tokenizer=None, preprocess_fn=preprocess_text) -> dict:
     """Predict class label/probability with a fine-tuned DistilBERT classifier."""
-    return _transformer_predict(model, text, "distilbert-base-uncased", preprocess_fn, tokenizer)
+    return _transformer_predict(model, text, str(config.DISTILBERT_MODEL_HF_PATH), preprocess_fn, tokenizer)
 
 
 def mental_roberta_predict(model, text: str, tokenizer=None, preprocess_fn=preprocess_text) -> dict:
     """Predict class label/probability with a fine-tuned mental/mental-roberta-base classifier."""
-    return _transformer_predict(model, text, "roberta-base", preprocess_fn, tokenizer)
+    return _transformer_predict(model, text, str(config.MENTAL_ROBERTA_HF_PATH), preprocess_fn, tokenizer)
 
 
 def xgboost_predict(model, vectorizer, text: str, preprocess_fn=preprocess_text) -> dict:

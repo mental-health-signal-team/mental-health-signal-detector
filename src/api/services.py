@@ -8,7 +8,10 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 import src.common.config as config
 import src.training.predict as predictor
+from src.common.gdrive_loader import ensure_models
 from src.training.preprocess import preprocess_text
+
+ensure_models(config.MODELS_DIR, config.GDRIVE_MODEL_FOLDER_ID)
 
 _lr_model = joblib.load(config.LR_MODEL_PATH)
 _lr_vectorizer = joblib.load(config.VECTORIZER_PATH)
