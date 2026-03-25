@@ -58,6 +58,8 @@ cycler==0.12.1
     # via matplotlib
 datasets==4.8.3
     # via mental-health-signal-detector (pyproject.toml)
+deep-translator==1.11.4
+    # via mental-health-signal-detector (pyproject.toml)
 dill==0.4.1
     # via
     #   datasets
@@ -136,6 +138,8 @@ kagglesdk==0.1.16
     # via
     #   kaggle
     #   kagglehub
+langdetect==1.0.9
+    # via mental-health-signal-detector (pyproject.toml)
 kiwisolver==1.5.0
     # via matplotlib
 markdown-it-py==4.0.0

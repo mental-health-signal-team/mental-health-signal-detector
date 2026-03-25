@@ -57,6 +57,35 @@ def test_distilbert_predict():
     assert 0.5 < result["probability"] < 1.0
 
 
+def test_distilbert_predict_with_bundled_tokenizer():
+    """distilbert_predict supports (model, tokenizer) tuple artifacts."""
+    tokenizer = Mock()
+    tokenizer.return_value = {
+        "input_ids": torch.tensor([[101, 102]]),
+        "attention_mask": torch.tensor([[1, 1]]),
+    }
+    model = Mock()
+    model.return_value = SimpleNamespace(logits=torch.tensor([[0.2, 1.6]]))
+
+    result = predict_module.distilbert_predict(
+        (model, tokenizer),
+        "hello",
+        preprocess_fn=lambda text: f"prep::{text}",
+    )
+
+    model.eval.assert_called_once()
+    tokenizer.assert_called_once_with(
+        "prep::hello",
+        return_tensors="pt",
+        truncation=True,
+        padding=True,
+        max_length=512,
+    )
+    assert set(model.call_args.kwargs) == {"input_ids", "attention_mask"}
+    assert result["label"] == 1
+    assert 0.5 < result["probability"] < 1.0
+
+
 def test_xgboost_predict():
     """xgboost_predict preprocesses, vectorizes and returns thresholded output."""
     model = Mock()

@@ -26,6 +26,15 @@ def roberta_diagnostics(load_model: bool = False):
         raise HTTPException(status_code=500, detail=f"RoBERTa diagnostics failed: {exc}") from exc
 
 
+@app.get("/diagnostics/distilbert")
+def distilbert_diagnostics(load_model: bool = False):
+    """Report which DistilBERT backend is active: local files or pickle."""
+    try:
+        return services.get_distilbert_diagnostics(load_model=load_model)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"DistilBERT diagnostics failed: {exc}") from exc
+
+
 @app.post("/predict")
 def predict(request: PredictionRequest) -> PredictionResponse:
     """Endpoint to predict mental health signals from input text."""

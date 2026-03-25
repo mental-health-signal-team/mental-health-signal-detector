@@ -15,6 +15,12 @@ def lr_predict(model, vectorizer, text: str, preprocess_fn=preprocess_text) -> d
 def distilbert_predict(model, text: str, tokenizer=None, preprocess_fn=preprocess_text) -> dict:
     """Predict class label/probability with a trained DistilBERT classifier."""
     preprocessed_text = preprocess_fn(text)
+
+    if isinstance(model, tuple) and len(model) == 2:
+        model, bundled_tokenizer = model
+        if tokenizer is None:
+            tokenizer = bundled_tokenizer
+
     if tokenizer is None:
         tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 

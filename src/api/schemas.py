@@ -15,3 +15,7 @@ class PredictionResponse(BaseModel):
 
     label: int
     probability: float
+    source_language: str = "unknown"
+    analysis_language: str = "en"
+    was_translated: bool = False
+    translated_text: str | None = None

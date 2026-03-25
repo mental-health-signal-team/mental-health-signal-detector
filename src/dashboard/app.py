@@ -111,6 +111,22 @@ if predict_btn:
                 
                 label = result.get("label", 0)
                 probability = result.get("probability", 0)
+                source_language = result.get("source_language", "unknown")
+                was_translated = result.get("was_translated", False)
+                translated_text = result.get("translated_text")
+
+                if was_translated:
+                    st.toast(
+                        f"Detected language: {source_language}. Text was translated to English for analysis.",
+                        icon="🌍",
+                    )
+                    st.warning(
+                        f"Language `{source_language}` detected. The text was translated to English before prediction.",
+                        icon="🌍",
+                    )
+                    if translated_text:
+                        with st.expander("See translated text used for analysis"):
+                            st.write(translated_text)
                 
                 st.markdown("---")
                 st.markdown("### 📊 Prediction Results")
