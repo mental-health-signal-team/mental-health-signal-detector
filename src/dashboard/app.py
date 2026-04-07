@@ -462,7 +462,7 @@ def main() -> None:
             </div>
             <div style="font-size:0.78rem;color:#bad7eb;line-height:1.8;">
                 Aïmen El Abidi<br/>
-                Thomas Dihn<br/>
+                Thomas Dinh<br/>
                 Stanislav Grinchenko<br/>
                 Fabrice Moncaut
             </div>

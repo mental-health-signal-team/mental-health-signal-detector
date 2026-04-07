@@ -19,11 +19,14 @@ _mental_roberta_model = None  # Lazy load the Mental Roberta model when needed
 _mental_roberta_tokenizer = None
 _xgboost_model = None  # Lazy load the XGBoost model when needed
 _xgboost_vectorizer = None  # Lazy load the XGBoost vectorizer when needed
+_models_downloaded = False
 
 
-def _ensure_models_once() -> None:
-    """Download missing model artifacts on first use."""
-    ensure_models(config.MODELS_DIR, config.GDRIVE_MODEL_FOLDER_ID)
+def _ensure_models_once():
+    global _models_downloaded
+    if not _models_downloaded:
+        ensure_models(config.MODELS_DIR, config.GDRIVE_MODEL_FOLDER_ID)
+        _models_downloaded = True
 
 
 def _get_lr_artifacts():
