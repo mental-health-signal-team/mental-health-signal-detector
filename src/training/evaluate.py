@@ -1,3 +1,5 @@
+"""Model evaluation utilities — computes and formats classification metrics (F1, precision, recall, accuracy)."""
+
 from sklearn.metrics import (
     accuracy_score,
     classification_report,

@@ -1,3 +1,5 @@
+"""ML inference services — model loading, prediction, explanation, and word attribution."""
+
 import html
 import re
 from typing import Any, Mapping

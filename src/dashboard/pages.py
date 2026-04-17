@@ -1,3 +1,5 @@
+"""Dashboard page router — dynamically loads and renders individual Streamlit pages."""
+
 import importlib
 
 import requests
