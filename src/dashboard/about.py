@@ -1,3 +1,5 @@
+"""Dashboard About page — renders project description, model benchmark table, and team info."""
+
 import streamlit as st
 
 _MODELS = [

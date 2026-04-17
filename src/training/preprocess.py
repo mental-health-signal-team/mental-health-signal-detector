@@ -1,3 +1,5 @@
+"""Text preprocessing pipeline — NLTK-based cleaning, normalisation, and special token substitution."""
+
 import html
 import re
 import string

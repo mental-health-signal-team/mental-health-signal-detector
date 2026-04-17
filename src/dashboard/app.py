@@ -1,3 +1,5 @@
+"""Streamlit dashboard entry point — configures the app and routes between pages."""
+
 import os
 import sys
 from pathlib import Path

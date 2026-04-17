@@ -1,3 +1,5 @@
+"""Standalone prediction script — runs inference with transformer models from the command line."""
+
 import torch
 from transformers import AutoTokenizer
 

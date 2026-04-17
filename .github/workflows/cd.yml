@@ -1,7 +1,9 @@
 name: CD
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
 
 # Only run one deployment at a time; cancel in-flight runs if a new push arrives
@@ -13,9 +15,7 @@ jobs:
   deploy:
     name: Build & Deploy to Cloud Run
     runs-on: ubuntu-latest
-
-    # Block deployment until all CI jobs pass on the same commit
-    needs: []   # CI runs in the same workflow_run trigger — see note below
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     # Required for Workload Identity Federation (keyless GCP auth)
     permissions:

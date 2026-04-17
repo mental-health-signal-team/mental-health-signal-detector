@@ -1,3 +1,5 @@
+"""Dashboard monitoring page — fetches /stats and /stats/drift from the API and renders Altair charts."""
+
 from datetime import datetime, timedelta, timezone
 
 import altair as alt

@@ -1,15 +1,20 @@
+"""FastAPI application — entry point for the Mental Health Signal Detector REST API."""
+
 from contextlib import asynccontextmanager
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 
 import src.api.services as services
-from src.api.database import get_stats, init_db, log_prediction
-from src.api.schemas import ExplainRequest, ExplainResponse, PredictionRequest, PredictionResponse, StatsResponse
+from src.api.database import get_drift, get_stats, init_db, log_prediction
+from src.api.schemas import DriftResponse, ExplainRequest, ExplainResponse, PredictionRequest, PredictionResponse, StatsResponse
+from src.common.config import MODEL_VERSION
+from src.common.logging import setup_logging
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Initialise DB tables on startup."""
+    """Configure logging and initialise DB tables on startup."""
+    setup_logging()
     init_db()
     yield
 
@@ -37,11 +42,13 @@ def root():
     """Root endpoint with quick API usage hints."""
     return {
         "message": "Mental Health Signal Detector API",
+        "model_version": MODEL_VERSION,
         "endpoints": {
             "health": "/health",
             "predict": "POST /predict",
             "explain": "POST /explain",
             "stats": "GET /stats",
+            "drift": "GET /stats/drift",
         },
     }
 
@@ -86,3 +93,13 @@ def explain(request: ExplainRequest) -> ExplainResponse:
 def stats() -> StatsResponse:
     """Return aggregated prediction statistics from the database."""
     return StatsResponse(**get_stats())
+
+
+@app.get("/stats/drift")
+def drift() -> DriftResponse:
+    """Return model confidence drift report.
+
+    Compares the 7-day rolling mean confidence against the all-time baseline.
+    Use drift_detected=True as an alert signal for model degradation monitoring (C11).
+    """
+    return DriftResponse(**get_drift())

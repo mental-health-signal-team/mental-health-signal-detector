@@ -1,3 +1,5 @@
+"""Model training script — fits TF-IDF vectoriser, Logistic Regression, and XGBoost classifiers."""
+
 import joblib
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression

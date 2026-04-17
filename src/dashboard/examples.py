@@ -1,3 +1,5 @@
+"""Curated example texts for the dashboard demo — distress and no-distress samples."""
+
 import random
 
 import streamlit as st

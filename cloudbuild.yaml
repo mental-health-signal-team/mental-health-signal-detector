@@ -1,16 +1,52 @@
+substitutions:
+  _MODEL_VERSION: "mental_roberta_v1"   # Override at trigger time for new model versions
+
 steps:
-  # Build the API Docker image
+  # Step 1 — Test gate: block deployment if tests fail
+  - name: 'python:3.11-slim'
+    id: run-tests
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        pip install poetry --quiet
+        poetry install --quiet
+        poetry run pytest tests/ -x --ignore=tests/api/test_main.py -q
+    # Note: test_main.py is excluded here because model artifacts are not available
+    # during Cloud Build. Health and stats endpoint tests are covered by test_health.py
+    # and the non-model tests in the test suite.
+
+  # Step 2 — Build the API Docker image, tagged with both :latest and model version
   - name: 'gcr.io/cloud-builders/docker'
+    id: docker-build
+    waitFor: ['run-tests']
     args:
       - build
       - -f
       - docker/Dockerfile.api
+      - --build-arg
+      - MODEL_VERSION=${_MODEL_VERSION}
       - -t
       - europe-west1-docker.pkg.dev/mental-health-signal-detector/mental-health-api/api:latest
+      - -t
+      - europe-west1-docker.pkg.dev/mental-health-signal-detector/mental-health-api/api:${_MODEL_VERSION}
       - .
 
-  # Deploy to Cloud Run (existing env vars — DATABASE_URL etc. — are preserved on the service)
+  # Step 3 — Push both tags to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    id: docker-push-latest
+    waitFor: ['docker-build']
+    args: ['push', 'europe-west1-docker.pkg.dev/mental-health-signal-detector/mental-health-api/api:latest']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: docker-push-versioned
+    waitFor: ['docker-build']
+    args: ['push', 'europe-west1-docker.pkg.dev/mental-health-signal-detector/mental-health-api/api:${_MODEL_VERSION}']
+
+  # Step 4 — Deploy to Cloud Run (existing env vars — DATABASE_URL etc. — are preserved)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: deploy
+    waitFor: ['docker-push-latest', 'docker-push-versioned']
     entrypoint: gcloud
     args:
       - run
@@ -28,8 +64,11 @@ steps:
       - '2'
       - --timeout
       - '300'
+      - --set-env-vars
+      - MODEL_VERSION=${_MODEL_VERSION}
 
 images:
   - europe-west1-docker.pkg.dev/mental-health-signal-detector/mental-health-api/api:latest
+  - europe-west1-docker.pkg.dev/mental-health-signal-detector/mental-health-api/api:${_MODEL_VERSION}
 
 timeout: '3600s'

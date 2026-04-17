@@ -1,4 +1,7 @@
+"""SQLAlchemy ORM, prediction logging, statistics, and drift detection for the API."""
+
 import hashlib
+import logging
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -7,6 +10,8 @@ from sqlalchemy import Column, DateTime, Float, Integer, String, create_engine, 
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 load_dotenv()
+
+_logger = logging.getLogger(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./predictions.db")
 
@@ -76,7 +81,56 @@ def log_prediction(text: str, model_type: str, label: int, probability: float, r
             )
             session.commit()
     except Exception as exc:
-        print(f"[log_prediction] ERROR — model={model_type} label={label} prob={probability}: {exc}")
+        _logger.error("log_prediction failed — model=%s label=%s prob=%s: %s", model_type, label, probability, exc)
+
+
+_DRIFT_THRESHOLD = 0.05  # Flag if 7-day mean confidence deviates more than 5% from baseline
+
+
+def get_drift() -> dict:
+    """Compute confidence drift: 7-day rolling mean vs all-time baseline.
+
+    Returns a dict with baseline_confidence, recent_confidence, delta,
+    drift_detected flag, and per-model breakdown for the last 7 days.
+    """
+    with SessionLocal() as session:
+        baseline_conf = float(session.scalar(select(func.avg(PredictionLog.probability))) or 0.0)
+        baseline_distress_rate = 0.0
+        total = session.scalar(select(func.count()).select_from(PredictionLog)) or 0
+        if total > 0:
+            distress = session.scalar(select(func.count()).select_from(PredictionLog).where(PredictionLog.label == 1)) or 0
+            baseline_distress_rate = round(distress / total, 3)
+
+        cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+        recent_conf = float(session.scalar(select(func.avg(PredictionLog.probability)).where(PredictionLog.created_at >= cutoff)) or 0.0)
+        recent_total = session.scalar(select(func.count()).select_from(PredictionLog).where(PredictionLog.created_at >= cutoff)) or 0
+        recent_distress_rate = 0.0
+        if recent_total > 0:
+            recent_distress = (
+                session.scalar(select(func.count()).select_from(PredictionLog).where(PredictionLog.created_at >= cutoff, PredictionLog.label == 1))
+                or 0
+            )
+            recent_distress_rate = round(recent_distress / recent_total, 3)
+
+        model_drift_rows = session.execute(
+            select(PredictionLog.model_type, func.avg(PredictionLog.probability).label("avg_conf"))
+            .where(PredictionLog.created_at >= cutoff)
+            .group_by(PredictionLog.model_type)
+        ).all()
+        model_drift = {row.model_type: round(float(row.avg_conf), 3) for row in model_drift_rows}
+
+    delta = round(recent_conf - baseline_conf, 3)
+    return {
+        "baseline_confidence": round(baseline_conf, 3),
+        "recent_confidence": round(recent_conf, 3),
+        "confidence_delta": delta,
+        "drift_detected": abs(delta) > _DRIFT_THRESHOLD,
+        "drift_threshold": _DRIFT_THRESHOLD,
+        "baseline_distress_rate": baseline_distress_rate,
+        "recent_distress_rate": recent_distress_rate,
+        "recent_predictions_count": recent_total,
+        "model_confidence_7d": model_drift,
+    }
 
 
 def get_stats() -> dict:

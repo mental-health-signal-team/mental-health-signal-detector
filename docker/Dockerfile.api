@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir torch==2.10.0 --index-url https://download.pytorc
 # the CPU-only torch above already satisfies the torch requirement.
 RUN grep -vE "^(nvidia-|cuda-|triton)" requirements.txt > /tmp/requirements_cpu.txt && \
     pip install --no-cache-dir -r /tmp/requirements_cpu.txt
-RUN python -m nltk.downloader stopwords wordnet averaged_perceptron_tagger averaged_perceptron_tagger_eng punkt punkt_tab
+RUN python -m nltk.downloader -d /usr/local/share/nltk_data stopwords wordnet averaged_perceptron_tagger averaged_perceptron_tagger_eng punkt punkt_tab
 
 COPY src/ ./src/
 #COPY models/ ./models/

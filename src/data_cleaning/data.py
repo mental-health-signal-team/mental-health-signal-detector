@@ -1,9 +1,14 @@
+"""Dataset loading and preparation pipeline — downloads raw data and assembles the balanced training set."""
+
+import logging
 from pathlib import Path
 
 import kagglehub
 import pandas as pd
 
 import src.common.config as config
+
+_logger = logging.getLogger(__name__)
 
 DATA_FILENAME = "balanced_dataset_30k.csv"
 
@@ -42,13 +47,13 @@ def download_data() -> None:
     expected_file = data_dir / DATA_FILENAME
 
     if expected_file.exists():
-        print("Dataset déjà téléchargé, téléchargement ignoré.")
+        _logger.info("Dataset already present — skipping download.")
     else:
         kagglehub.dataset_download(
             "rishabhkausish/reddit-depression-dataset",
             output_dir=str(data_dir),
         )
-        print("Dataset téléchargé.")
+        _logger.info("Dataset downloaded successfully.")
 
 
 def load_data() -> pd.DataFrame:

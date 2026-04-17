@@ -1,3 +1,5 @@
+"""Centralised path configuration — model artifact locations, data directories, and version info."""
+
 import os
 from pathlib import Path
 
@@ -15,3 +17,6 @@ DISTILBERT_MODEL_HF_PATH = MODELS_DIR / "distilbert_hf"
 MENTAL_ROBERTA_HF_PATH = MODELS_DIR / "mental_roberta_hf"
 XGBOOST_MODEL_PATH = MODELS_DIR / "xgb_depression_classifier.pkl"
 XGBOOST_VECTORIZER_PATH = MODELS_DIR / "xgb_tfidf_vectorizer.pkl"
+
+# Model version — set via MODEL_VERSION env var in Cloud Run (injected by cloudbuild.yaml)
+MODEL_VERSION: str = os.getenv("MODEL_VERSION", "mental_roberta_v1")
