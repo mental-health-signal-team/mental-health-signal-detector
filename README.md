@@ -190,11 +190,4 @@ mental-health-signal-detector/
 
 ---
 
-## Team
 
-| Member | Role |
-|---|---|
-| Stanislav Grinchenko | Architecture, FastAPI, CI/CD, coordination |
-| Aïmen | ML/NLP ownership |
-| Fabrice | Data engineering |
-| Thomas | Streamlit dashboard, documentation |
